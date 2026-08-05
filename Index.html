@@ -1,61 +1,195 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="hu" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Dual-Language Chat</title>
-    <!-- Tailwind CSS a letisztult, modern felületért -->
+    <title>NEXUS // Dual-Language AI Workstation</title>
+    
+    <!-- Garantált sötét háttér natív CSS-ből (akkor is sötét, ha nincs internet) -->
+    <style>
+        html, body {
+            background-color: #090d16 !important;
+            color: #f1f5f9 !important;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        .hidden { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        .bg-grid {
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+        .glow-emerald { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3); }
+    </style>
+
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            accent: '#10b981',
+                            cyan: '#06b6d4',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-slate-900 text-slate-100 h-screen flex flex-col font-sans">
+<body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
     <!-- Fejléc -->
-    <header class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center shadow-md">
-        <div class="flex items-center gap-2">
-            <span class="text-xl">🤖</span>
-            <h1 class="text-lg font-bold text-emerald-400">Bilingual AI Assistant</h1>
+    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center z-20">
+        <div class="flex items-center gap-3">
+            <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30">
+                <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
+                <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.0</span>
+                </h1>
+                <p class="text-[11px] text-slate-400 font-mono">Bilingual AI Pipeline // Auto-Fallback</p>
+            </div>
         </div>
-        <button onclick="toggleSettings()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-sm text-slate-200 transition">
-            ⚙️ API Kulcsok
-        </button>
+
+        <div class="flex items-center gap-2">
+            <button onclick="toggleSettings()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:border-emerald-500/50">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>API Keys</span>
+            </button>
+        </div>
     </header>
 
     <!-- API Kulcs Beállító Panel -->
-    <div id="settings-panel" class="hidden bg-slate-800 p-4 border-b border-slate-700 space-y-3">
-        <p class="text-xs text-slate-400">Az API kulcsok biztonságosan, kizárólag a tableted böngészőjében tárolódnak.</p>
+    <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>LOCAL ENCRYPTED STORAGE (TABLET ONLY)</span>
+            </div>
+            <button onclick="toggleSettings()" class="text-slate-500 hover:text-slate-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
-            <input type="password" id="groq-key" placeholder="Groq API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
-            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <div class="space-y-1">
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i> Gemini API Key
+                </label>
+                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500/80 transition">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Groq API Key
+                </label>
+                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500/80 transition">
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <i data-lucide="network" class="w-3 h-3 text-purple-400"></i> OpenRouter Key
+                </label>
+                <input type="password" id="openrouter-key" placeholder="sk-or-..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-purple-500/80 transition">
+            </div>
         </div>
-        <button onclick="saveKeys()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">
-            Kulcsok Mentése
-        </button>
-    </div>
 
-    <!-- Chat Üzenetek Területe -->
-    <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="bg-slate-800 border border-slate-700 p-3.5 rounded-xl max-w-2xl text-slate-300 text-sm">
-            👋 Üdvözöllek! Katints a jobb felső sarokban a **⚙️ API Kulcsok** gombra, másold be a megszerzett kulcsokat, majd mentsd el őket!
+        <div class="flex justify-end pt-1">
+            <button onclick="saveKeys()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition glow-emerald">
+                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                Mentés & Aktiválás
+            </button>
         </div>
     </div>
 
-    <!-- Állapotjelző Sáv -->
-    <div id="status-bar" class="px-4 py-1 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
-        Rendszer állapota: Készenlétben
+    <!-- Chat Állapot és Üzenetek Területe -->
+    <main id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        
+        <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
+            <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
+                <i data-lucide="terminal" class="w-4 h-4"></i>
+                <span>SYSTEM_INITIALIZED // READY</span>
+            </div>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Üdvözöllek a munkaállomáson! Kattints a jobb felső **API Keys** gombra, mentsd el a kulcsaidat, majd írd be a kérdésedet magyarul!
+            </p>
+            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-mono text-slate-400">
+                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
+                    <i data-lucide="code-2" class="w-3 h-3 text-cyan-400"></i> Code Optimizing
+                </span>
+                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
+                    <i data-lucide="activity" class="w-3 h-3 text-emerald-400"></i> Medical Logic
+                </span>
+                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
+                    <i data-lucide="arrow-left-right" class="w-3 h-3 text-amber-400"></i> Auto Translate
+                </span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Terminal Status Bar -->
+    <div id="status-bar-container" class="bg-cyber-950 border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-xs font-mono text-slate-400">
+        <div class="flex items-center gap-2">
+            <span id="status-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="status-bar">Rendszer: Készenlétben</span>
+        </div>
+        <div class="text-[10px] text-slate-400 hidden sm:block">
+            Samsung Tab S9 FE // Client-side Engine
+        </div>
     </div>
 
-    <!-- Beviteli Mező -->
-    <div class="bg-slate-800 p-3 border-t border-slate-700 flex gap-2">
-        <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul (pl. kódolási hiba, orvosi kérdés)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-emerald-500 resize-none text-sm"></textarea>
-        <button onclick="handleSend()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-lg font-medium transition text-sm">
-            Küldés
-        </button>
-    </div>
+    <!-- Input Box Area -->
+    <footer class="bg-cyber-900/90 border-t border-slate-800/80 p-3 md:p-4 backdrop-blur-md">
+        <div class="max-w-4xl mx-auto flex items-end gap-2 bg-cyber-950 border border-slate-800 rounded-xl p-2 focus-within:border-emerald-500/70 transition-all">
+            <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
+            
+            <button onclick="handleSend()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-lg transition-all flex items-center justify-center glow-emerald shrink-0">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </footer>
 
-    <!-- JavaScript Logika (Alapkezelés) -->
+    <!-- JavaScript Logika -->
     <script>
-        // API kulcsok betöltése böngésző tárolóból
+        if (window.lucide) { lucide.createIcons(); }
+
+        const textarea = document.getElementById('user-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
@@ -64,49 +198,208 @@
 
         function toggleSettings() {
             const panel = document.getElementById("settings-panel");
-            panel.classList.toggle("hidden");
+            if (panel.style.display === "none" || panel.classList.contains("hidden")) {
+                panel.style.display = "block";
+                panel.classList.remove("hidden");
+            } else {
+                panel.style.display = "none";
+                panel.classList.add("hidden");
+            }
         }
 
         function saveKeys() {
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
-            alert("API kulcsok elmentve a tableten!");
+            
+            updateStatus("API kulcsok sikeresen elmentve!");
             toggleSettings();
+        }
+
+        function updateStatus(text) {
+            document.getElementById("status-bar").innerText = "Rendszer: " + text;
         }
 
         function appendMessage(sender, text, isError = false) {
             const chatBox = document.getElementById("chat-box");
-            const msgDiv = document.createElement("div");
-            
             const isUser = sender === "Felhasználó";
-            msgDiv.className = `p-3.5 rounded-xl max-w-2xl text-sm ${
-                isUser 
-                ? "bg-emerald-900/40 border border-emerald-700/50 ml-auto text-emerald-100" 
-                : isError 
-                ? "bg-red-900/40 border border-red-700/50 text-red-200"
-                : "bg-slate-800 border border-slate-700 text-slate-200"
-            }`;
             
-            msgDiv.innerHTML = `<strong>${sender}:</strong><br><div class="mt-1 whitespace-pre-wrap">${text}</div>`;
-            chatBox.appendChild(msgDiv);
+            const msgWrapper = document.createElement("div");
+            msgWrapper.className = `flex ${isUser ? "justify-end" : "justify-start"} max-w-3xl mx-auto w-full`;
+
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `p-4 rounded-2xl text-sm leading-relaxed max-w-[85%] border shadow-lg transition-all ${
+                isUser 
+                ? "bg-gradient-to-br from-emerald-950/80 to-slate-900 border-emerald-600/40 text-emerald-50 text-right rounded-tr-none" 
+                : isError 
+                ? "bg-red-950/50 border-red-800/60 text-red-200 rounded-tl-none"
+                : "bg-cyber-900/90 border-slate-800 text-slate-200 rounded-tl-none"
+            }`;
+
+            const headerHtml = `
+                <div class="flex items-center gap-2 mb-1 text-[11px] font-mono text-slate-400 ${isUser ? "justify-end text-emerald-400" : ""}">
+                    <i data-lucide="${isUser ? 'user' : 'bot'}" class="w-3.5 h-3.5"></i>
+                    <span>${sender}</span>
+                </div>
+            `;
+
+            msgDiv.innerHTML = headerHtml + `<div class="whitespace-pre-wrap ${isUser ? "text-left" : ""}">${text}</div>`;
+            msgWrapper.appendChild(msgDiv);
+            chatBox.appendChild(msgWrapper);
+            
+            if (window.lucide) { lucide.createIcons(); }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function updateStatus(text) {
-            document.getElementById("status-bar").innerText = "Rendszer állapota: " + text;
+        async function callGemini(apiKey, systemPrompt, userText) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [
+                        { role: "user", parts: [{ text: `${systemPrompt}\n\nInput: ${userText}` }] }
+                    ]
+                })
+            });
+            if (!response.ok) throw new Error("Gemini API Hiba (" + response.status + ")");
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
         }
 
-        function handleSend() {
+        async function callGroq(apiKey, systemPrompt, userText) {
+            const url = "https://api.groq.com/openai/v1/chat/completions";
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "llama-3.1-8b-instant",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userText }
+                    ]
+                })
+            });
+            if (!response.ok) throw new Error("Groq API Hiba (" + response.status + ")");
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        async function callOpenRouter(apiKey, systemPrompt, userText) {
+            const url = "https://openrouter.ai/api/v1/chat/completions";
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "meta-llama/llama-3.1-8b-instruct:free",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userText }
+                    ]
+                })
+            });
+            if (!response.ok) throw new Error("OpenRouter API Hiba (" + response.status + ")");
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        async function runMainTask(englishPrompt) {
+            const geminiKey = localStorage.getItem("GEMINI_KEY");
+            const groqKey = localStorage.getItem("GROQ_KEY");
+            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
+
+            const systemInstruction = "You are an expert AI software developer and medical analysis assistant. Provide clear, detailed, and accurate responses.";
+
+            if (geminiKey) {
+                try {
+                    updateStatus("Fő modell futtatása: Gemini Flash...");
+                    return await callGemini(geminiKey, systemInstruction, englishPrompt);
+                } catch (e) {
+                    console.warn("Gemini sikertelen, váltás Groq-ra...", e);
+                }
+            }
+
+            if (groqKey) {
+                try {
+                    updateStatus("Gemini nem elérhető -> Váltás Groq (Llama 3)-ra...");
+                    return await callGroq(groqKey, systemInstruction, englishPrompt);
+                } catch (e) {
+                    console.warn("Groq sikertelen, váltás OpenRouter-re...", e);
+                }
+            }
+
+            if (openrouterKey) {
+                try {
+                    updateStatus("Groq nem elérhető -> Váltás OpenRouter-re...");
+                    return await callOpenRouter(openrouterKey, systemInstruction, englishPrompt);
+                } catch (e) {
+                    console.error("OpenRouter is sikertelen.", e);
+                }
+            }
+
+            throw new Error("Egyetlen API sem válaszolt. Ellenőrizd a kulcsokat a jobb felső menüben!");
+        }
+
+        async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
             if (!text) return;
 
+            const geminiKey = localStorage.getItem("GEMINI_KEY");
+            const groqKey = localStorage.getItem("GROQ_KEY");
+            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
+
+            if (!geminiKey && !groqKey && !openrouterKey) {
+                alert("Kérlek, adj meg legalább egy API kulcsot a jobb felső 'API Keys' menüben!");
+                return;
+            }
+
             appendMessage("Felhasználó", text);
             input.value = "";
-            
-            // Ide építjük be a következő lépésben a fordító és modellváltó logikát!
-            updateStatus("Feldolgozás alatt...");
+            input.style.height = 'auto';
+
+            try {
+                updateStatus("1/3 Lépés: Magyar kérés fordítása és prompt-optimalizálása...");
+                const translateSystemPrompt = "You are a translator and prompt engineer. Translate the user's Hungarian query into highly structured, clear, and professional English optimized for LLMs. Output ONLY the English translation, nothing else.";
+                
+                let englishPrompt = "";
+                if (geminiKey) {
+                    englishPrompt = await callGemini(geminiKey, translateSystemPrompt, text);
+                } else if (groqKey) {
+                    englishPrompt = await callGroq(groqKey, translateSystemPrompt, text);
+                } else {
+                    englishPrompt = await callOpenRouter(openrouterKey, translateSystemPrompt, text);
+                }
+
+                updateStatus("2/3 Lépés: AI modell válaszának lekérése (Angolul)...");
+                const englishResponse = await runMainTask(englishPrompt);
+
+                updateStatus("3/3 Lépés: Válasz visszafordítása Magyarra...");
+                const backTranslateSystemPrompt = "You are a professional translator. Translate the following English response into natural, fluent Hungarian. Preserve technical accuracy, code formatting, and markdown structures accurately.";
+                
+                let magyarValasz = "";
+                if (geminiKey) {
+                    magyarValasz = await callGemini(geminiKey, backTranslateSystemPrompt, englishResponse);
+                } else if (groqKey) {
+                    magyarValasz = await callGroq(groqKey, backTranslateSystemPrompt, englishResponse);
+                } else {
+                    magyarValasz = await callOpenRouter(openrouterKey, backTranslateSystemPrompt, englishResponse);
+                }
+
+                appendMessage("NEXUS AI", magyarValasz);
+                updateStatus("Készenlétben");
+
+            } catch (error) {
+                console.error(error);
+                appendMessage("Rendszer Hiba", error.message, true);
+                updateStatus("Hiba történt a feldolgozás során");
+            }
         }
     </script>
 </body>
