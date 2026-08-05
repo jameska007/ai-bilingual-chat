@@ -254,9 +254,9 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Részletes Gemini hiba-elkapás
+        // Gemini API hívás (Frissítve az aktív gemini-2.0-flash modellre)
         async function callGemini(apiKey, systemPrompt, userText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -332,7 +332,7 @@
 
             if (geminiKey) {
                 try {
-                    updateStatus(`${statusLabel} [Gemini Flash]...`);
+                    updateStatus(`${statusLabel} [Gemini 2.0 Flash]...`);
                     return await callGemini(geminiKey, systemPrompt, userText);
                 } catch (e) {
                     console.warn(e);
