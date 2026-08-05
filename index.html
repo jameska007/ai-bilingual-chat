@@ -57,6 +57,7 @@
 </head>
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
+    <!-- Fejléc -->
     <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center z-20">
         <div class="flex items-center gap-3">
             <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30">
@@ -68,13 +69,20 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.0</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.5 Dual-Mem</span>
                 </h1>
-                <p class="text-[11px] text-slate-400 font-mono">Bilingual AI Pipeline // Auto-Fallback</p>
+                <p class="text-[11px] text-slate-400 font-mono">Smart Failover // Key & Keyless Hybrid</p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- Kategória Választó -->
+            <select id="domain-selector" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500">
+                <option value="coding">💻 Kódolás</option>
+                <option value="reasoning" selected>🧠 Általános & Érvelés</option>
+                <option value="medical">🩺 Egészségügy</option>
+            </select>
+
             <button onclick="toggleSettings()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:border-emerald-500/50">
                 <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
                 <span>API Keys</span>
@@ -82,6 +90,7 @@
         </div>
     </header>
 
+    <!-- API Kulcs Beállító Panel -->
     <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
@@ -131,36 +140,41 @@
             </div>
         </div>
 
-        <div class="flex justify-end pt-1">
+        <div class="flex justify-between items-center pt-1">
+            <button onclick="clearMemory()" class="text-xs text-red-400 hover:text-red-300 font-mono flex items-center gap-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Memória törlése
+            </button>
             <button onclick="saveKeys()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition glow-emerald">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                Mentés & Aktiválás
+                <i data-lucide="save" class="w-3.5 h-3.5"></i> Mentés & Aktiválás
             </button>
         </div>
     </div>
 
+    <!-- Chat Állapot és Üzenetek Területe -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // READY</span>
+                <span>SYSTEM_INITIALIZED // HYBRID ENGINE ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek a munkaállomáson! Kattints a jobb felső **API Keys** gombra, mentsd el a kulcsaidat, majd írd be a kérdésedet magyarul!
+                Üdvözöllek! Válassz kategóriát a fejlécben. A rendszer automatikusan a legjobb kulcsos modellt próbálja meghívni, kimerülés esetén pedig észrevétlenül átvált a tartalék/kulcsmentes csatornára!
             </p>
         </div>
     </main>
 
+    <!-- Terminal Status Bar -->
     <div id="status-bar-container" class="bg-cyber-950 border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-xs font-mono text-slate-400">
         <div class="flex items-center gap-2">
             <span id="status-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="status-bar">Rendszer: Készenlétben</span>
         </div>
-        <div class="text-[10px] text-slate-400 hidden sm:block">
-            Samsung Tab S9 FE // Client-side Engine
+        <div id="active-model-tag" class="text-[10px] text-emerald-400 font-mono hidden sm:block">
+            Memória: 0 kör | Tömörítés: Inaktív
         </div>
     </div>
 
+    <!-- Beviteli mező -->
     <footer class="bg-cyber-900/90 border-t border-slate-800/80 p-3 md:p-4 backdrop-blur-md">
         <div class="max-w-4xl mx-auto flex items-end gap-2 bg-cyber-950 border border-slate-800 rounded-xl p-2 focus-within:border-emerald-500/70 transition-all">
             <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
@@ -171,8 +185,13 @@
         </div>
     </footer>
 
+    <!-- JavaScript Engine -->
     <script>
         if (window.lucide) { lucide.createIcons(); }
+
+        // MEMÓRIA STRUKTÚRA (Short-Term & Long-Term)
+        let shortTermMemory = []; // Utolsó N nyers beszélgetési kör
+        let longTermSummary = "";  // Tömörített háttér-kontextus
 
         const textarea = document.getElementById('user-input');
         textarea.addEventListener('input', function() {
@@ -188,13 +207,8 @@
 
         function toggleSettings() {
             const panel = document.getElementById("settings-panel");
-            if (panel.style.display === "none" || panel.classList.contains("hidden")) {
-                panel.style.display = "block";
-                panel.classList.remove("hidden");
-            } else {
-                panel.style.display = "none";
-                panel.classList.add("hidden");
-            }
+            panel.classList.toggle("hidden");
+            panel.style.display = panel.classList.contains("hidden") ? "none" : "block";
         }
 
         function toggleKeyVisibility(inputId, iconId) {
@@ -214,13 +228,24 @@
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
-            
-            updateStatus("API kulcsok sikeresen elmentve!");
+            updateStatus("API kulcsok elmentve!");
             toggleSettings();
+        }
+
+        function clearMemory() {
+            shortTermMemory = [];
+            longTermSummary = "";
+            updateMemoryTag();
+            alert("Rövid és hosszú távú memória törölve!");
         }
 
         function updateStatus(text) {
             document.getElementById("status-bar").innerText = "Rendszer: " + text;
+        }
+
+        function updateMemoryTag() {
+            const tag = document.getElementById("active-model-tag");
+            tag.innerText = `Memória: ${shortTermMemory.length} kör | Kivonat: ${longTermSummary ? 'Aktív' : 'Üres'}`;
         }
 
         function appendMessage(sender, text, isError = false) {
@@ -254,145 +279,177 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Gemini API hívás (Frissítve az aktív gemini-2.0-flash modellre)
+        // --- DEDIKÁLT INGYENES FORDÍTÓ (Lingva Translate) ---
+        async function translateText(text, fromLang, toLang) {
+            try {
+                const url = `https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Lingva hiba");
+                const data = await response.json();
+                return data.translation || text;
+            } catch (e) {
+                console.warn("Lingva fallback -> eredeti szöveg megtartva", e);
+                return text;
+            }
+        }
+
+        // --- API-KULCSOS HÍVÁSOK ---
         async function callGemini(apiKey, systemPrompt, userText) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [
-                        { role: "user", parts: [{ text: `${systemPrompt}\n\nInput: ${userText}` }] }
-                    ]
+                    contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nInput: ${userText}` }] }]
                 })
             });
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                const errMsg = errData.error?.message || response.statusText || response.status;
-                throw new Error(`Gemini (${response.status}): ${errMsg}`);
-            }
+            if (!response.ok) throw new Error(`Gemini (${response.status})`);
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
         }
 
-        async function callGroq(apiKey, systemPrompt, userText) {
+        async function callGroq(apiKey, systemPrompt, userText, modelName = "llama-3.3-70b-versatile") {
             const url = "https://api.groq.com/openai/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
                 body: JSON.stringify({
-                    model: "llama-3.1-8b-instant",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userText }
-                    ]
+                    model: modelName,
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }]
                 })
             });
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(`Groq (${response.status}): ${errData.error?.message || response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Groq (${response.status})`);
             const data = await response.json();
             return data.choices[0].message.content;
         }
 
-        async function callOpenRouter(apiKey, systemPrompt, userText) {
+        async function callOpenRouter(apiKey, systemPrompt, userText, modelName = "deepseek/deepseek-r1:free") {
             const url = "https://openrouter.ai/api/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
                 body: JSON.stringify({
-                    model: "meta-llama/llama-3.1-8b-instruct:free",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userText }
-                    ]
+                    model: modelName,
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }]
                 })
             });
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(`OpenRouter (${response.status}): ${errData.error?.message || response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`OpenRouter (${response.status})`);
             const data = await response.json();
             return data.choices[0].message.content;
         }
 
-        async function executeWithFallback(systemPrompt, userText, statusLabel) {
+        // --- API KULCS NÉLKÜLI PUBLIKUS HÍVÁS (Pollinations) ---
+        async function callPollinationsKeyless(systemPrompt, userText, modelName = "deepseek") {
+            const fullPrompt = `${systemPrompt}\n\n[USER TASK]: ${userText}`;
+            const url = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=${modelName}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Pollinations (${response.status})`);
+            const text = await response.text();
+            if (!text || text.trim().length === 0) throw new Error("Pollinations üres válasz");
+            return text;
+        }
+
+        // --- TÖBBLÉPCSŐS FAILOVER ENGINE ---
+        async function executeSmartPipeline(systemPrompt, englishPrompt) {
+            const domain = document.getElementById("domain-selector").value;
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            let errorLogs = [];
+            // Memória (Összefoglaló + Rövid távú előzmények) előkészítése
+            let contextText = "";
+            if (longTermSummary) {
+                contextText += `[SUMMARY OF PAST CONVERSATION]:\n${longTermSummary}\n\n`;
+            }
+            if (shortTermMemory.length > 0) {
+                contextText += `[RECENT RECENT TURNS]:\n` + shortTermMemory.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n") + `\n\n`;
+            }
+            const inputWithContext = `${contextText}[CURRENT USER QUERY]: ${englishPrompt}`;
 
-            if (geminiKey) {
+            // Kategória szerinti modell preferenciák
+            let executionChain = [];
+
+            if (domain === "coding") {
+                if (groqKey) executionChain.push({ name: "Groq (Qwen Coder)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "qwen-2.5-coder-32b") });
+                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
+                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
+                executionChain.push({ name: "Pollinations (Keyless Qwen)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "qwen-coder") });
+            } else if (domain === "medical") {
+                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash (Med-Prompt)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on pathophysiological accuracy and medical guidelines.", inputWithContext) });
+                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
+                if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
+                executionChain.push({ name: "Pollinations (Keyless DeepSeek)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "deepseek") });
+            } else {
+                // Általános / Érvelés
+                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
+                if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
+                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
+                executionChain.push({ name: "Pollinations (Keyless Llama)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "llama") });
+            }
+
+            // Végrehajtás automatikus váltással
+            for (const step of executionChain) {
                 try {
-                    updateStatus(`${statusLabel} [Gemini 2.0 Flash]...`);
-                    return await callGemini(geminiKey, systemPrompt, userText);
-                } catch (e) {
-                    console.warn(e);
-                    errorLogs.push(e.message);
+                    updateStatus(`Futtatás: ${step.name}...`);
+                    const response = await step.fn();
+                    return { response, modelUsed: step.name };
+                } catch (err) {
+                    console.warn(`Hiba a következőnél (${step.name}):`, err.message);
                 }
             }
 
-            if (groqKey) {
-                try {
-                    updateStatus(`${statusLabel} [Groq Llama 3]...`);
-                    return await callGroq(groqKey, systemPrompt, userText);
-                } catch (e) {
-                    console.warn(e);
-                    errorLogs.push(e.message);
-                }
-            }
-
-            if (openrouterKey) {
-                try {
-                    updateStatus(`${statusLabel} [OpenRouter]...`);
-                    return await callOpenRouter(openrouterKey, systemPrompt, userText);
-                } catch (e) {
-                    console.warn(e);
-                    errorLogs.push(e.message);
-                }
-            }
-
-            throw new Error("Minden megadott API hibaüzenettel leállt: " + errorLogs.join(" | "));
+            throw new Error("Minden modell és ingyenes csatorna leállt vagy elérhetetlen!");
         }
 
+        // --- MEMÓRIA TÖMÖRÍTŐ LOGIKA (LTM compression) ---
+        async function compressMemoryIfNeeded() {
+            if (shortTermMemory.length >= 3) {
+                updateStatus("Memória tömörítése és kivonat frissítése...");
+                const toCompress = shortTermMemory.splice(0, 2); // Kiemeljük a legrégebbi 2 kört
+                const summaryPrompt = "Compress the following conversation history into a concise, high-density factual background summary. Preserve key entities, technical facts, and user context.";
+                const conversationText = toCompress.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n");
+                
+                try {
+                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "llama");
+                    longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
+                    updateMemoryTag();
+                } catch (e) {
+                    console.warn("Memória tömörítési hiba:", e);
+                }
+            }
+        }
+
+        // --- FŐ FOLYAMAT ---
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
             if (!text) return;
-
-            const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const groqKey = localStorage.getItem("GROQ_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
-
-            if (!geminiKey && !groqKey && !openrouterKey) {
-                alert("Kérlek, adj meg legalább egy API kulcsot a jobb felső 'API Keys' menüben!");
-                return;
-            }
 
             appendMessage("Felhasználó", text);
             input.value = "";
             input.style.height = 'auto';
 
             try {
-                const translateSystemPrompt = "You are an expert translator and prompt engineer. Translate the user's Hungarian query into highly structured, clear, and professional English optimized for LLMs. Output ONLY the English translation, nothing else.";
-                const englishPrompt = await executeWithFallback(translateSystemPrompt, text, "1/3 Lépés: Magyar -> Angol fordítás");
+                // 1. LÉPÉS: Fordítás angolra (Dedikált ingyenes Lingva)
+                updateStatus("1/3 Lépés: Magyar kérés fordítása...");
+                const englishPrompt = await translateText(text, "hu", "en");
 
-                const mainTaskSystemPrompt = "You are an expert AI software developer and medical analysis assistant. Provide clear, detailed, and highly accurate responses.";
-                const englishResponse = await executeWithFallback(mainTaskSystemPrompt, englishPrompt, "2/3 Lépés: Fő AI válasz generálása");
+                // 2. LÉPÉS: Fő feladat lefutatása Smart Failover Engine-nel
+                updateStatus("2/3 Lépés: AI modell válaszának lekérése...");
+                const systemPrompt = "You are an expert AI assistant specialized in code optimization, reasoning, and technical analysis. Provide direct, highly accurate responses.";
+                const { response: englishResponse, modelUsed } = await executeSmartPipeline(systemPrompt, englishPrompt);
 
-                const backTranslateSystemPrompt = "You are a professional translator. Translate the following English response into natural, fluent, and accurate Hungarian. Preserve technical accuracy, code blocks, and markdown structures intact.";
-                const magyarValasz = await executeWithFallback(backTranslateSystemPrompt, englishResponse, "3/3 Lépés: Angol -> Magyar fordítás");
+                // 3. LÉPÉS: Visszafordítás magyarra
+                updateStatus("3/3 Lépés: Válasz visszafordítása Magyarra...");
+                const magyarValasz = await translateText(englishResponse, "en", "hu");
 
-                appendMessage("NEXUS AI", magyarValasz);
+                appendMessage(`NEXUS AI (${modelUsed})`, magyarValasz);
                 updateStatus("Készenlétben");
+
+                // Memória frissítése
+                shortTermMemory.push({ user: englishPrompt, ai: englishResponse });
+                updateMemoryTag();
+                await compressMemoryIfNeeded();
 
             } catch (error) {
                 console.error(error);
