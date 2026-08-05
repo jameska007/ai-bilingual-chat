@@ -24,6 +24,7 @@
                 linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
         }
         .glow-emerald { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3); }
+        .glow-purple { box-shadow: 0 0 20px -5px rgba(168, 85, 247, 0.4); }
     </style>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -58,28 +59,36 @@
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
     <!-- Fejléc -->
-    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center z-20">
+    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center z-20 flex-wrap gap-2">
         <div class="flex items-center gap-3">
             <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30">
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.1 Direct-Vault</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.2 Fast-Save</span>
                 </h1>
                 <p class="text-[11px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- Új téma indítása -->
             <button onclick="createNewTopicPrompt()" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-emerald">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                 <span>Új téma</span>
             </button>
 
-            <select id="recent-topics-select" onchange="switchTopic(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500 max-w-[150px] truncate">
+            <!-- Recent Témák Választó -->
+            <select id="recent-topics-select" onchange="switchTopic(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500 max-w-[140px] truncate">
                 <option value="">📁 Recent témák...</option>
             </select>
+
+            <!-- KÖZVETLEN MENTÉS OBSIDIANBA GOMB -->
+            <button onclick="exportCurrentToObsidian()" class="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-purple">
+                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                <span>Mentés Obsidianba</span>
+            </button>
 
             <select id="domain-selector" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500">
                 <option value="coding">💻 Kódolás</option>
@@ -93,7 +102,7 @@
             </button>
 
             <button onclick="toggleSettings()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:border-emerald-500/50">
-                <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <i data-lucide="settings" class="w-3.5 h-3.5 text-emerald-400"></i>
                 <span>Beállítások</span>
             </button>
         </div>
@@ -128,14 +137,11 @@
             </div>
         </div>
 
-        <!-- Mappa Kijelölés és Export Gombok -->
+        <!-- Mappa Kijelölés és Egyéb Exportálási Gombok -->
         <div class="flex flex-wrap justify-between items-center pt-2 border-t border-slate-800 gap-2">
             <div class="flex flex-wrap gap-2">
                 <button onclick="selectObsidianFolder()" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold border border-amber-500 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1 shadow-md">
                     <i data-lucide="folder-input" class="w-3.5 h-3.5"></i> <span id="vault-folder-status">📁 Obsidian Mappa Kijelölése</span>
-                </button>
-                <button onclick="exportCurrentToObsidian()" class="bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-800 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
-                    <i data-lucide="file-output" class="w-3.5 h-3.5"></i> Export Obsidian (.md)
                 </button>
                 <button onclick="exportCurrentToJSONL()" class="bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 border border-cyan-800 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
                     <i data-lucide="code" class="w-3.5 h-3.5"></i> Export Dataset (.jsonl)
@@ -146,7 +152,7 @@
             </div>
 
             <button onclick="saveKeys()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded text-xs font-semibold glow-emerald font-mono">
-                Mentés
+                API Kulcsok Mentése
             </button>
         </div>
     </div>
@@ -169,10 +175,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_READY // DIRECT FILE ACCESS ENABLED</span>
+                <span>SYSTEM_READY // FAST SAVE & RECENT TOPICS</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Kattints a **Beállítások $\rightarrow$ 📁 Obsidian Mappa Kijelölése** gombra az engedély megadásához! Ezután minden mentés közvetlenül a kiválasztott Obsidian mappába kerül.
+                A beszélgetés automatikusan mentődik az adatbázisba. A felső sávban lévő **"Mentés Obsidianba"** gombra kattintva bármikor kimentheted a teljes témát Markdown fájlként!
             </p>
         </div>
     </main>
@@ -205,9 +211,8 @@
         let currentTopic = null;
         let logHistory = [];
         let db = null;
-        let obsidianDirHandle = null; // Direct Directory Access Handle
+        let obsidianDirHandle = null;
 
-        // --- INDEXEDDB INICIALIZÁLÁS ---
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open("NEXUS_Workstation_DB", 1);
@@ -230,23 +235,19 @@
             });
         }
 
-        // --- DIRECT FILE SYSTEM ACCESS API ---
         async function selectObsidianFolder() {
             try {
                 if ('showDirectoryPicker' in window) {
-                    obsidianDirHandle = await window.showDirectoryPicker({
-                        mode: 'readwrite'
-                    });
+                    obsidianDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                     document.getElementById("vault-folder-status").innerText = "✓ Obsidian Mappa Aktív";
                     addLog("SUCCESS", `Direct Vault Mappa beállítva: ${obsidianDirHandle.name}`);
-                    alert(`Közvetlen elérés engedélyezve ehhez a mappához: ${obsidianDirHandle.name}`);
+                    alert(`Közvetlen mentés aktív ehhez a mappához: ${obsidianDirHandle.name}`);
                 } else {
-                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Normál letöltésként fog működni.");
+                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Normál letöltésként fog menteni.");
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     addLog("ERROR", "Mappa kijelölési hiba", err);
-                    alert("Nem sikerült megadni a mappa engedélyt.");
                 }
             }
         }
@@ -259,7 +260,7 @@
                     await writable.write(content);
                     await writable.close();
                     addLog("SUCCESS", `Fájl közvetlenül a Vaultba írva: ${filename}`);
-                    alert(`Fájl elmentve az Obsidian mappába:\n${filename}`);
+                    alert(`Sikeres mentés az Obsidian mappába:\n${filename}`);
                     return true;
                 } catch (e) {
                     addLog("WARN", "Közvetlen írás sikertelen, váltás letöltésre...", e);
@@ -268,7 +269,6 @@
             return false;
         }
 
-        // --- TÉMA KEZELÉS ---
         async function createNewTopicPrompt() {
             const title = prompt("Adj meg egy nevet az új témának:");
             if (!title || !title.trim()) return;
@@ -354,10 +354,9 @@
             addLog("SUCCESS", `Téma betöltve: ${currentTopic.title} (${currentTopic.turns.length} kör)`);
         }
 
-        // --- EXPORTÁLÁSI FUNKCIÓK ---
         async function exportCurrentToObsidian() {
             if (!currentTopic || currentTopic.turns.length === 0) {
-                alert("Nincs aktív téma vagy üres a csevegés!");
+                alert("Nincs kiválasztott téma vagy még nincsenek üzenetek a beszélgetésben!");
                 return;
             }
 
@@ -378,7 +377,7 @@ tags:
 
 `;
 
-            currentTopic.turns.forEach((turn, idx) => {
+            currentTopic.turns.forEach((turn) => {
                 mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> ${turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
             });
 
@@ -424,7 +423,7 @@ tags:
             const allTopics = await getAllTopicsFromDB();
             const dump = {
                 exportDate: new Date().toISOString(),
-                databaseVersion: "3.1",
+                databaseVersion: "3.2",
                 topics: allTopics
             };
             downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
@@ -438,7 +437,6 @@ tags:
             a.click();
         }
 
-        // --- UTIL & LOGS ---
         function addLog(level, message, details = null) {
             const time = new Date().toLocaleTimeString();
             logHistory.push({ time, level, message, details });
@@ -478,7 +476,6 @@ tags:
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // --- NETWORK API ENGINE ---
         async function translateText(text, fromLang, toLang) {
             try {
                 const res = await fetch(`https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`);
