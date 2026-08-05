@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEXUS // Dual-Language AI Workstation</title>
     
-    <!-- Garantált sötét háttér natív CSS-ből -->
     <style>
         html, body {
             background-color: #090d16 !important;
@@ -27,15 +26,10 @@
         .glow-emerald { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3); }
     </style>
 
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
@@ -63,7 +57,6 @@
 </head>
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
-    <!-- Fejléc -->
     <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center z-20">
         <div class="flex items-center gap-3">
             <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30">
@@ -89,7 +82,6 @@
         </div>
     </header>
 
-    <!-- API Kulcs Beállító Panel -->
     <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
@@ -102,7 +94,6 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <!-- Gemini Input -->
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
                     <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i> Gemini API Key
@@ -115,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- Groq Input -->
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
                     <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Groq API Key
@@ -128,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- OpenRouter Input -->
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
                     <i data-lucide="network" class="w-3 h-3 text-purple-400"></i> OpenRouter Key
@@ -150,9 +139,7 @@
         </div>
     </div>
 
-    <!-- Chat Állapot és Üzenetek Területe -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-        
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
@@ -161,22 +148,9 @@
             <p class="text-sm text-slate-300 leading-relaxed">
                 Üdvözöllek a munkaállomáson! Kattints a jobb felső **API Keys** gombra, mentsd el a kulcsaidat, majd írd be a kérdésedet magyarul!
             </p>
-            <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-mono text-slate-400">
-                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
-                    <i data-lucide="code-2" class="w-3 h-3 text-cyan-400"></i> Code Optimizing
-                </span>
-                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
-                    <i data-lucide="activity" class="w-3 h-3 text-emerald-400"></i> Medical Logic
-                </span>
-                <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700/50 flex items-center gap-1">
-                    <i data-lucide="arrow-left-right" class="w-3 h-3 text-amber-400"></i> Auto Translate
-                </span>
-            </div>
         </div>
-
     </main>
 
-    <!-- Terminal Status Bar -->
     <div id="status-bar-container" class="bg-cyber-950 border-t border-slate-800/80 px-4 py-2 flex items-center justify-between text-xs font-mono text-slate-400">
         <div class="flex items-center gap-2">
             <span id="status-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -187,7 +161,6 @@
         </div>
     </div>
 
-    <!-- Input Box Area -->
     <footer class="bg-cyber-900/90 border-t border-slate-800/80 p-3 md:p-4 backdrop-blur-md">
         <div class="max-w-4xl mx-auto flex items-end gap-2 bg-cyber-950 border border-slate-800 rounded-xl p-2 focus-within:border-emerald-500/70 transition-all">
             <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
@@ -198,7 +171,6 @@
         </div>
     </footer>
 
-    <!-- JavaScript Logika -->
     <script>
         if (window.lucide) { lucide.createIcons(); }
 
@@ -282,9 +254,9 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Gemini API hívás (Frissítve gemini-2.0-flash modellre)
+        // Részletes Gemini hiba-elkapás
         async function callGemini(apiKey, systemPrompt, userText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -294,12 +266,15 @@
                     ]
                 })
             });
-            if (!response.ok) throw new Error("Gemini API Hiba (" + response.status + ")");
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.error?.message || response.statusText || response.status;
+                throw new Error(`Gemini (${response.status}): ${errMsg}`);
+            }
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
         }
 
-        // Groq API hívás
         async function callGroq(apiKey, systemPrompt, userText) {
             const url = "https://api.groq.com/openai/v1/chat/completions";
             const response = await fetch(url, {
@@ -316,12 +291,14 @@
                     ]
                 })
             });
-            if (!response.ok) throw new Error("Groq API Hiba (" + response.status + ")");
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`Groq (${response.status}): ${errData.error?.message || response.statusText}`);
+            }
             const data = await response.json();
             return data.choices[0].message.content;
         }
 
-        // OpenRouter API hívás
         async function callOpenRouter(apiKey, systemPrompt, userText) {
             const url = "https://openrouter.ai/api/v1/chat/completions";
             const response = await fetch(url, {
@@ -338,51 +315,54 @@
                     ]
                 })
             });
-            if (!response.ok) throw new Error("OpenRouter API Hiba (" + response.status + ")");
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`OpenRouter (${response.status}): ${errData.error?.message || response.statusText}`);
+            }
             const data = await response.json();
             return data.choices[0].message.content;
         }
 
-        // Egységesített automatikus váltólogika (Fallback Engine)
         async function executeWithFallback(systemPrompt, userText, statusLabel) {
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            // 1. Próbálkozás: Gemini 2.0 Flash
+            let errorLogs = [];
+
             if (geminiKey) {
                 try {
-                    updateStatus(`${statusLabel} [Gemini 2.0 Flash]...`);
+                    updateStatus(`${statusLabel} [Gemini Flash]...`);
                     return await callGemini(geminiKey, systemPrompt, userText);
                 } catch (e) {
-                    console.warn("Gemini hiba, váltás Groq-ra...", e);
+                    console.warn(e);
+                    errorLogs.push(e.message);
                 }
             }
 
-            // 2. Próbálkozás: Groq Llama 3
             if (groqKey) {
                 try {
                     updateStatus(`${statusLabel} [Groq Llama 3]...`);
                     return await callGroq(groqKey, systemPrompt, userText);
                 } catch (e) {
-                    console.warn("Groq hiba, váltás OpenRouter-re...", e);
+                    console.warn(e);
+                    errorLogs.push(e.message);
                 }
             }
 
-            // 3. Próbálkozás: OpenRouter
             if (openrouterKey) {
                 try {
                     updateStatus(`${statusLabel} [OpenRouter]...`);
                     return await callOpenRouter(openrouterKey, systemPrompt, userText);
                 } catch (e) {
-                    console.error("OpenRouter is hiba.", e);
+                    console.warn(e);
+                    errorLogs.push(e.message);
                 }
             }
 
-            throw new Error("Egyetlen megadott API sem tudta feldolgozni a kérést! Ellenőrizd a kulcso(ka)t!");
+            throw new Error("Minden megadott API hibaüzenettel leállt: " + errorLogs.join(" | "));
         }
 
-        // Fő folyamatvezérlő
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
@@ -402,15 +382,12 @@
             input.style.height = 'auto';
 
             try {
-                // 1. LÉPÉS: Magyar -> Angol fordítás & Prompt optimalizálás
                 const translateSystemPrompt = "You are an expert translator and prompt engineer. Translate the user's Hungarian query into highly structured, clear, and professional English optimized for LLMs. Output ONLY the English translation, nothing else.";
                 const englishPrompt = await executeWithFallback(translateSystemPrompt, text, "1/3 Lépés: Magyar -> Angol fordítás");
 
-                // 2. LÉPÉS: Fő feladat lefutatása (Angolul)
                 const mainTaskSystemPrompt = "You are an expert AI software developer and medical analysis assistant. Provide clear, detailed, and highly accurate responses.";
                 const englishResponse = await executeWithFallback(mainTaskSystemPrompt, englishPrompt, "2/3 Lépés: Fő AI válasz generálása");
 
-                // 3. LÉPÉS: Angol -> Magyar visszafordítás
                 const backTranslateSystemPrompt = "You are a professional translator. Translate the following English response into natural, fluent, and accurate Hungarian. Preserve technical accuracy, code blocks, and markdown structures intact.";
                 const magyarValasz = await executeWithFallback(backTranslateSystemPrompt, englishResponse, "3/3 Lépés: Angol -> Magyar fordítás");
 
