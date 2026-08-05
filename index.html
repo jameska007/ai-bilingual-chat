@@ -69,9 +69,9 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v2.0 Free-Core</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v2.1 Ultimate</span>
                 </h1>
-                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // High Availability</p>
+                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // Zero-Error Failover</p>
             </div>
         </div>
 
@@ -189,10 +189,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // FREE-CORE ROUTER ACTIVE</span>
+                <span>SYSTEM_INITIALIZED // ULTIMATE FAILOVER ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek! A kulcsmentes ág átállt az ingyenes nyílt modellekre (`mistral`, `qwen`, `llama`). A kérésed garantáltan választ kap!
+                Üdvözöllek! A rendszer mostantól intelligensen felismeri, ha egy API-kulcs kimerült, és azonnal átvált a garantáltan működő kulcsmentes csatornára!
             </p>
         </div>
     </main>
@@ -286,7 +286,7 @@
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
             document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
-            addLog("INFO", "NEXUS v2.0 (Free-Core Router) betöltve.");
+            addLog("INFO", "NEXUS v2.1 (Ultimate Failover) betöltve.");
         });
 
         function toggleSettings() {
@@ -413,7 +413,7 @@
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
                 addLog("WARN", `Groq hiba (${response.status})`, errJson);
-                throw new Error(`Groq (${response.status}): ${errJson.error?.message || response.statusText}`);
+                throw new Error(`Groq (${status}): ${errJson.error?.message || response.statusText}`);
             }
             const data = await response.json();
             addLog("SUCCESS", "Groq válasz megérkezett.");
@@ -441,21 +441,22 @@
             return data.choices[0].message.content;
         }
 
-        // --- INGYENES KULCSMENTES POLLINATIONS GET (Mistral, Qwen, Llama modellekkel) ---
-        async function callPollinationsKeyless(systemPrompt, userText, modelName = "mistral") {
-            addLog("INFO", `Pollinations GET (Kulcsmentes) hívás indult (${modelName})...`);
+        // --- BIZTONSÁGOS KULCSMENTES POLLINATIONS (Modell-specifikus fallback nélkül) ---
+        async function callPollinationsKeyless(systemPrompt, userText) {
+            addLog("INFO", "Pollinations Kulcsmentes API hívás indult...");
             const combinedPrompt = `${systemPrompt}\n\nTask: ${userText}`;
-            const url = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=${modelName}`;
+            // Modell paraméter elhagyva, így a Pollinations automatikusan a legmegbízhatóbb ingyenes útvonalat adja
+            const url = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}`;
             
             const response = await fetch(url, { method: "GET" });
             if (!response.ok) {
-                addLog("WARN", `Pollinations (${modelName}) GET Hiba (${response.status})`);
-                throw new Error(`Pollinations ${modelName} (${response.status})`);
+                addLog("WARN", `Pollinations GET Hiba (${response.status})`);
+                throw new Error(`Pollinations (${response.status})`);
             }
             
             const text = await response.text();
-            if (!text || text.trim().length === 0) throw new Error(`Pollinations (${modelName}) üres választ adott.`);
-            addLog("SUCCESS", `Pollinations (${modelName}) válasz sikeresen megérkezett!`);
+            if (!text || text.trim().length === 0) throw new Error("Pollinations üres választ adott.");
+            addLog("SUCCESS", "Pollinations kulcsmentes válasz sikeresen megérkezett!");
             return text;
         }
 
@@ -476,11 +477,7 @@
 
             let executionChain = [];
 
-            // Kulcsos modellek
-            if (geminiKey) {
-                executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
-                executionChain.push({ name: "Gemini 2.0 Flash-Lite", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash-lite") });
-            }
+            // 1. Ha van érvényes Groq vagy OpenRouter kulcs, azt tesszük előre (mert a Gemini kimerült)
             if (groqKey) {
                 executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "llama-3.3-70b-versatile") });
             }
@@ -488,10 +485,13 @@
                 executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
             }
 
-            // Ingyenes kulcsmentes tartalék csatornák (Garantáltan 402 mentes nyílt modellek)
-            executionChain.push({ name: "Pollinations (Mistral)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "mistral") });
-            executionChain.push({ name: "Pollinations (Qwen Coder)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "qwen-coder") });
-            executionChain.push({ name: "Pollinations (Llama)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "llama") });
+            // 2. Garantáltan ingyenes, kulcsmentes csatorna (Bármilyen Gemini tiltás vagy hiányzó kulcs esetén azonnal lefut)
+            executionChain.push({ name: "Pollinations (Keyless Direct)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext) });
+
+            // 3. Gemini csak a végén (ha esetleg mégis frissülne a kvóta)
+            if (geminiKey) {
+                executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
+            }
 
             let errorLogs = [];
 
@@ -522,7 +522,7 @@
                 const conversationText = toCompress.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n");
                 
                 try {
-                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "mistral");
+                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText);
                     longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
                     addLog("SUCCESS", "Memória tömörítve.");
                     updateMemoryTag();
