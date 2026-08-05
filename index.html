@@ -69,9 +69,9 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.8 Logger</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.9 CORS-Bypass</span>
                 </h1>
-                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // Real-time Debug Log</p>
+                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // High Availability</p>
             </div>
         </div>
 
@@ -82,7 +82,6 @@
                 <option value="medical">🩺 Egészségügy</option>
             </select>
 
-            <!-- Debug Napló Gomb -->
             <button onclick="toggleDebugModal()" class="flex items-center gap-1.5 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/60 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all">
                 <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400"></i>
                 <span>Napló</span>
@@ -190,10 +189,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // DEBUG LOGGER ACTIVE</span>
+                <span>SYSTEM_INITIALIZED // HIGH-AVAILABILITY HYBRID ENGINE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek! Beépítettünk egy **Debug Napló** modult. Ha bármilyen hiba történik, kattints a fejlécben a sárga **Napló** gombra a pontos ok megtekintéséhez!
+                Üdvözöllek! A kulcsmentes API kapcsolat át lett állítva a böngészőbarát GET protokollra. Írd be a kérdésedet, a válasz azonnal megérkezik!
             </p>
         </div>
     </main>
@@ -220,7 +219,7 @@
         </div>
     </footer>
 
-    <!-- JavaScript Engine & Logger -->
+    <!-- JavaScript Engine -->
     <script>
         if (window.lucide) { lucide.createIcons(); }
 
@@ -228,7 +227,6 @@
         let longTermSummary = "";
         let logHistory = [];
 
-        // --- HIBANAPLÓZÓ MOTOR (DEBUG LOGGER) ---
         function addLog(level, message, details = null) {
             const time = new Date().toLocaleTimeString();
             const logItem = { time, level, message, details };
@@ -266,7 +264,7 @@
         function copyLogs() {
             const text = logHistory.map(l => `[${l.time}] [${l.level}] ${l.message} ${l.details ? '\n' + JSON.stringify(l.details) : ''}`).join('\n');
             navigator.clipboard.writeText(text);
-            alert("Napló kivasolva a vágólapra!");
+            alert("Napló kimásolva a vágólapra!");
         }
 
         function downloadLogs() {
@@ -278,7 +276,6 @@
             a.click();
         }
 
-        // --- UI FUNKCIÓK ---
         const textarea = document.getElementById('user-input');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -289,7 +286,7 @@
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
             document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
-            addLog("INFO", "NEXUS v1.8 inicializálva. Elérhető API kulcsok ellenőrizve.");
+            addLog("INFO", "NEXUS v1.9 (CORS-Bypass Engine) betöltve.");
         });
 
         function toggleSettings() {
@@ -315,7 +312,7 @@
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
-            addLog("SUCCESS", "API kulcsok elmentve a localStorage-ba.");
+            addLog("SUCCESS", "API kulcsok mentve.");
             updateStatus("API kulcsok elmentve!");
             toggleSettings();
         }
@@ -324,7 +321,7 @@
             shortTermMemory = [];
             longTermSummary = "";
             updateMemoryTag();
-            addLog("WARN", "Munkamemória törölve a felhasználó által.");
+            addLog("WARN", "Memória törölve.");
             alert("Memória törölve!");
         }
 
@@ -368,29 +365,23 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // --- STABILIZÁLT FORDÍTÓ NAPLÓZÁSSAL ---
         async function translateText(text, fromLang, toLang) {
             addLog("INFO", `Fordítás indítása (${fromLang} -> ${toLang})...`);
             try {
                 const url = `https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`;
                 const response = await fetch(url);
-                if (!response.ok) {
-                    addLog("WARN", `Lingva Translate szerver elutasította (${response.status}). Natív szöveg használata.`);
-                    return text;
-                }
+                if (!response.ok) return text;
                 const data = await response.json();
-                addLog("SUCCESS", "Fordítás sikeres.");
                 return data.translation || text;
             } catch (e) {
-                addLog("WARN", "Lingva Translate elérése nem sikerült. Az eredeti szöveggel haladunk tovább.", e.message);
                 return text;
             }
         }
 
-        // --- GEMINI API HÍVÁS NAPLÓZÁSSAL ---
-        async function callGemini(apiKey, systemPrompt, userText) {
-            addLog("INFO", "Gemini 2.0 Flash hívása indult...");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        // --- GEMINI API HÍVÁS (Dupla modell próbálkozással: 2.0 Flash -> 1.5 Flash) ---
+        async function callGemini(apiKey, systemPrompt, userText, modelName = "gemini-2.0-flash") {
+            addLog("INFO", `Gemini hívása indult (${modelName})...`);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -401,17 +392,16 @@
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
                 const errMsg = errJson.error?.message || response.statusText;
-                addLog("ERROR", `Gemini API Hiba (${response.status})`, errJson);
-                throw new Error(`Gemini (${response.status}): ${errMsg}`);
+                addLog("WARN", `Gemini (${modelName}) hiba (${response.status}): ${errMsg}`);
+                throw new Error(`Gemini ${modelName} (${response.status}): ${errMsg}`);
             }
             const data = await response.json();
-            addLog("SUCCESS", "Gemini válasz sikeresen megérkezett.");
+            addLog("SUCCESS", `Gemini (${modelName}) válasz megérkezett.`);
             return data.candidates[0].content.parts[0].text;
         }
 
-        // --- GROQ API HÍVÁS NAPLÓZÁSSAL ---
         async function callGroq(apiKey, systemPrompt, userText, modelName = "llama-3.3-70b-versatile") {
-            addLog("INFO", `Groq API hívása indult (${modelName})...`);
+            addLog("INFO", `Groq hívása indult (${modelName})...`);
             const url = "https://api.groq.com/openai/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
@@ -423,17 +413,16 @@
             });
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
-                addLog("ERROR", `Groq API Hiba (${response.status})`, errJson);
+                addLog("WARN", `Groq hiba (${response.status})`, errJson);
                 throw new Error(`Groq (${response.status}): ${errJson.error?.message || response.statusText}`);
             }
             const data = await response.json();
-            addLog("SUCCESS", "Groq válasz sikeresen megérkezett.");
+            addLog("SUCCESS", "Groq válasz megérkezett.");
             return data.choices[0].message.content;
         }
 
-        // --- OPENROUTER API HÍVÁS NAPLÓZÁSSAL ---
         async function callOpenRouter(apiKey, systemPrompt, userText, modelName = "deepseek/deepseek-r1:free") {
-            addLog("INFO", `OpenRouter API hívása indult (${modelName})...`);
+            addLog("INFO", `OpenRouter hívása indult (${modelName})...`);
             const url = "https://openrouter.ai/api/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
@@ -445,93 +434,90 @@
             });
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
-                addLog("ERROR", `OpenRouter API Hiba (${response.status})`, errJson);
+                addLog("WARN", `OpenRouter hiba (${response.status})`, errJson);
                 throw new Error(`OpenRouter (${response.status}): ${errJson.error?.message || response.statusText}`);
             }
             const data = await response.json();
-            addLog("SUCCESS", "OpenRouter válasz sikeresen megérkezett.");
+            addLog("SUCCESS", "OpenRouter válasz megérkezett.");
             return data.choices[0].message.content;
         }
 
-        // --- POLLINATIONS API HÍVÁS NAPLÓZÁSSAL ---
+        // --- KULCSMENTES GET POLLINATIONS (CORS-Bypass szimpla HTTP GET-tel) ---
         async function callPollinationsKeyless(systemPrompt, userText, modelName = "openai") {
-            addLog("INFO", `Pollinations Kulcsmentes API hívása indult (${modelName})...`);
-            const url = "https://text.pollinations.ai/";
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userText }
-                    ],
-                    model: modelName
-                })
-            });
+            addLog("INFO", `Pollinations GET (Kulcsmentes) hívás indult (${modelName})...`);
+            const combinedPrompt = `${systemPrompt}\n\nTask: ${userText}`;
+            const url = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=${modelName}`;
+            
+            // GET kérés nem generál CORS OPTIONS előellenőrzést a böngészőkben
+            const response = await fetch(url, { method: "GET" });
             if (!response.ok) {
-                addLog("ERROR", `Pollinations Hiba (${response.status})`);
+                addLog("WARN", `Pollinations GET Hiba (${response.status})`);
                 throw new Error(`Pollinations (${response.status})`);
             }
             
-            const rawText = await response.text();
-            addLog("SUCCESS", "Pollinations válasz megérkezett.");
-            try {
-                const parsed = JSON.parse(rawText);
-                return parsed.choices?.[0]?.message?.content || parsed.text || rawText;
-            } catch (e) {
-                return rawText;
-            }
+            const text = await response.text();
+            if (!text || text.trim().length === 0) throw new Error("Pollinations üres választ adott.");
+            addLog("SUCCESS", "Pollinations GET válasz megérkezett!");
+            return text;
         }
 
-        // --- EXECUTION ENGINE NAPLÓZÁSSAL ---
         async function executeSmartPipeline(systemPrompt, userPromptText) {
             const domain = document.getElementById("domain-selector").value;
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            addLog("INFO", `Végrehajtás indítása a(z) '${domain}' kategóriában.`);
-            addLog("INFO", `Rendelkezésre álló kulcsok: Gemini=${!!geminiKey}, Groq=${!!groqKey}, OpenRouter=${!!openrouterKey}`);
-
             let contextText = "";
             if (longTermSummary) {
-                contextText += `[SUMMARY OF PAST DIALOGUE]:\n${longTermSummary}\n\n`;
+                contextText += `[SUMMARY]:\n${longTermSummary}\n\n`;
             }
             if (shortTermMemory.length > 0) {
-                contextText += `[RECENT CONVERSATION TURNS]:\n` + shortTermMemory.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n") + `\n\n`;
+                contextText += `[RECENT TURNS]:\n` + shortTermMemory.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n") + `\n\n`;
             }
             const inputWithContext = `${contextText}[USER QUERY]: ${userPromptText}`;
 
             let executionChain = [];
 
+            // Kulcsos és kulcsmentes modellek sorrendbe állítása
             if (domain === "coding") {
                 if (groqKey) executionChain.push({ name: "Groq (Qwen Coder)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "qwen-2.5-coder-32b") });
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
-                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                if (geminiKey) {
+                    executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
+                    executionChain.push({ name: "Gemini 1.5 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-1.5-flash") });
+                }
+                executionChain.push({ name: "Pollinations (Keyless Qwen)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "qwen-coder") });
+                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             } else if (domain === "medical") {
-                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on pathophysiological accuracy.", inputWithContext) });
+                if (geminiKey) {
+                    executionChain.push({ name: "Gemini 2.0 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on medical guidelines.", inputWithContext, "gemini-2.0-flash") });
+                    executionChain.push({ name: "Gemini 1.5 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on medical guidelines.", inputWithContext, "gemini-1.5-flash") });
+                }
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
                 if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
-                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                executionChain.push({ name: "Pollinations (Keyless DeepSeek)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "deepseek") });
+                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             } else {
-                if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
+                if (geminiKey) {
+                    executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
+                    executionChain.push({ name: "Gemini 1.5 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-1.5-flash") });
+                }
                 if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             }
 
             let errorLogs = [];
 
             for (const step of executionChain) {
                 try {
-                    addLog("INFO", `Próbálkozás a következővel: ${step.name}`);
+                    addLog("INFO", `Próbálkozás: ${step.name}`);
                     updateStatus(`Futtatás: ${step.name}...`);
                     const response = await step.fn();
                     addLog("SUCCESS", `Sikeres válaszadás ettől a modelltől: ${step.name}`);
                     return { response, modelUsed: step.name };
                 } catch (err) {
-                    addLog("WARN", `${step.name} sikertelen volt. Lépés a következőre.`, err.message);
+                    addLog("WARN", `${step.name} sikertelen volt. Lépés a következőre.`);
                     errorLogs.push(`${step.name}: ${err.message}`);
                 }
             }
@@ -543,7 +529,7 @@
 
         async function compressMemoryIfNeeded() {
             if (shortTermMemory.length >= 3) {
-                addLog("INFO", "Rövid távú memória betelt (3 kör). Tömörítés indítása...");
+                addLog("INFO", "Tömörítés indítása...");
                 updateStatus("Memória tömörítése...");
                 const toCompress = shortTermMemory.splice(0, 2);
                 const summaryPrompt = "Summarize the key facts from this conversation into a brief memory context.";
@@ -552,10 +538,10 @@
                 try {
                     const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "openai");
                     longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
-                    addLog("SUCCESS", "LTM kivonat sikeresen frissült.");
+                    addLog("SUCCESS", "Memória tömörítve.");
                     updateMemoryTag();
                 } catch (e) {
-                    addLog("WARN", "Memóriatömörítés nem sikerült.", e.message);
+                    addLog("WARN", "Memóriatömörítés kihagyva.", e.message);
                 }
             }
         }
@@ -565,13 +551,13 @@
             const text = input.value.trim();
             if (!text) return;
 
-            addLog("INFO", `Felhasználói kérés elküldve: "${text.substring(0, 30)}..."`);
+            addLog("INFO", `Új feladat elküldve.`);
             appendMessage("Felhasználó", text);
             input.value = "";
             input.style.height = 'auto';
 
             try {
-                updateStatus("1/3 Lépés: Kérés feldolgozása...");
+                updateStatus("1/3 Lépés: Előkészítés...");
                 const englishPrompt = await translateText(text, "hu", "en");
 
                 updateStatus("2/3 Lépés: AI modell válaszol...");
@@ -592,7 +578,6 @@
                 console.error(error);
                 appendMessage("Rendszer Hiba", error.message, true);
                 updateStatus("Hiba történt a feldolgozás során");
-                // Hiba esetén automatikusan felugrik a Debug Napló modal
                 toggleDebugModal();
             }
         }
