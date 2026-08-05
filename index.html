@@ -66,7 +66,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.2 Fast-Save</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.3 Multi-Save</span>
                 </h1>
                 <p class="text-[11px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
@@ -84,9 +84,9 @@
                 <option value="">📁 Recent témák...</option>
             </select>
 
-            <!-- KÖZVETLEN MENTÉS OBSIDIANBA GOMB -->
+            <!-- MENTÉS / MEGOSZTÁS OBSIDIANBA GOMB -->
             <button onclick="exportCurrentToObsidian()" class="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-purple">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                 <span>Mentés Obsidianba</span>
             </button>
 
@@ -109,11 +109,11 @@
     </header>
 
     <!-- Beállító Panel -->
-    <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
+    <div id="settings-panel" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
                 <i data-lucide="database" class="w-4 h-4"></i>
-                <span>LOCAL STORAGE & DIRECT VAULT ACCESS</span>
+                <span>LOCAL STORAGE & EXPORT ENGINE</span>
             </div>
             <button onclick="toggleSettings()" class="text-slate-500 hover:text-slate-300">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -123,31 +123,30 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">Gemini API Key</label>
-                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
+                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200">
             </div>
 
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">Groq API Key</label>
-                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
+                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200">
             </div>
 
             <div class="space-y-1">
                 <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">OpenRouter Key</label>
-                <input type="password" id="openrouter-key" placeholder="sk-or-..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
+                <input type="password" id="openrouter-key" placeholder="sk-or-..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200">
             </div>
         </div>
 
-        <!-- Mappa Kijelölés és Egyéb Exportálási Gombok -->
         <div class="flex flex-wrap justify-between items-center pt-2 border-t border-slate-800 gap-2">
             <div class="flex flex-wrap gap-2">
                 <button onclick="selectObsidianFolder()" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold border border-amber-500 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1 shadow-md">
-                    <i data-lucide="folder-input" class="w-3.5 h-3.5"></i> <span id="vault-folder-status">📁 Obsidian Mappa Kijelölése</span>
+                    <i data-lucide="folder-input" class="w-3.5 h-3.5"></i> <span id="vault-folder-status">📁 Mappa Csatolása (Desktop)</span>
                 </button>
                 <button onclick="exportCurrentToJSONL()" class="bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 border border-cyan-800 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
                     <i data-lucide="code" class="w-3.5 h-3.5"></i> Export Dataset (.jsonl)
                 </button>
                 <button onclick="exportFullDatabaseJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
-                    <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Full DB Backup (.json)
+                    <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Teljes DB Backup (.json)
                 </button>
             </div>
 
@@ -157,8 +156,8 @@
         </div>
     </div>
 
-    <!-- HIBANAPLÓ (DEBUG LOG) MODAL -->
-    <div id="debug-modal" style="display: none;" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <!-- HIBANAPLÓ MODAL -->
+    <div id="debug-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-cyber-900 border border-slate-800 w-full max-w-4xl h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
             <div class="bg-cyber-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
                 <div class="flex items-center gap-2 text-xs font-mono text-amber-400">
@@ -175,10 +174,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_READY // FAST SAVE & RECENT TOPICS</span>
+                <span>SYSTEM_READY // MULTI-SAVE ENGINE ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                A beszélgetés automatikusan mentődik az adatbázisba. A felső sávban lévő **"Mentés Obsidianba"** gombra kattintva bármikor kimentheted a teljes témát Markdown fájlként!
+                A mentés gomb megnyomásakor az Android megosztási ablakán keresztül közvetlenül az **Obsidian** alkalmazásba küldheted a csevegést, vagy lementheted a fájlt.
             </p>
         </div>
     </main>
@@ -235,15 +234,25 @@
             });
         }
 
+        function toggleSettings() {
+            const panel = document.getElementById("settings-panel");
+            panel.classList.toggle("hidden");
+            addLog("INFO", "Beállítások panel átváltva.");
+        }
+
+        function toggleDebugModal() {
+            document.getElementById("debug-modal").classList.toggle("hidden");
+        }
+
         async function selectObsidianFolder() {
             try {
                 if ('showDirectoryPicker' in window) {
                     obsidianDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-                    document.getElementById("vault-folder-status").innerText = "✓ Obsidian Mappa Aktív";
+                    document.getElementById("vault-folder-status").innerText = "✓ Mappa Csatolva";
                     addLog("SUCCESS", `Direct Vault Mappa beállítva: ${obsidianDirHandle.name}`);
                     alert(`Közvetlen mentés aktív ehhez a mappához: ${obsidianDirHandle.name}`);
                 } else {
-                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Normál letöltésként fog menteni.");
+                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Használd a Mentés gombot az Android megosztáshoz!");
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') {
@@ -255,6 +264,12 @@
         async function saveDirectToVault(filename, content) {
             if (obsidianDirHandle) {
                 try {
+                    const options = { mode: 'readwrite' };
+                    if ((await obsidianDirHandle.queryPermission(options)) !== 'granted') {
+                        if ((await obsidianDirHandle.requestPermission(options)) !== 'granted') {
+                            return false;
+                        }
+                    }
                     const fileHandle = await obsidianDirHandle.getFileHandle(filename, { create: true });
                     const writable = await fileHandle.createWritable();
                     await writable.write(content);
@@ -263,10 +278,125 @@
                     alert(`Sikeres mentés az Obsidian mappába:\n${filename}`);
                     return true;
                 } catch (e) {
-                    addLog("WARN", "Közvetlen írás sikertelen, váltás letöltésre...", e);
+                    addLog("WARN", "Közvetlen írás sikertelen, váltás megosztásra / letöltésre...", e.message);
                 }
             }
             return false;
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            try {
+                const blob = new Blob([content], { type: contentType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    if (document.body.contains(a)) {
+                        document.body.removeChild(a);
+                    }
+                    URL.revokeObjectURL(url);
+                }, 1500);
+                addLog("SUCCESS", `Fájl letöltése elindítva: ${fileName}`);
+            } catch (e) {
+                addLog("ERROR", "Letöltési hiba", e.message);
+            }
+        }
+
+        function generateObsidianMarkdown(topic, domain) {
+            let mdContent = `---
+topic_id: "${topic.id}"
+title: "${topic.title}"
+created_at: "${topic.createdAt}"
+domain: "${domain}"
+total_turns: ${topic.turns.length}
+tags:
+  - nexus-ai
+  - ai-training
+  - ${domain}
+---
+
+# ${topic.title}
+
+`;
+            topic.turns.forEach((turn) => {
+                mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> ${turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
+            });
+            return mdContent;
+        }
+
+        async function exportCurrentToObsidian() {
+            if (!currentTopic || currentTopic.turns.length === 0) {
+                alert("Nincs kiválasztott téma vagy még nincsenek üzenetek a beszélgetésben!");
+                return;
+            }
+
+            const domain = document.getElementById("domain-selector").value;
+            const mdContent = generateObsidianMarkdown(currentTopic, domain);
+            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
+
+            // 1. Direkt mappa írás (ha be van állítva)
+            const savedDirectly = await saveDirectToVault(fileName, mdContent);
+            if (savedDirectly) return;
+
+            // 2. Android Web Share API (Megnyitja a megosztási panelt, ahonnan átküldhető az Obsidianba)
+            const file = new File([mdContent], fileName, { type: "text/markdown" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: currentTopic.title,
+                        text: `NEXUS AI Export: ${currentTopic.title}`
+                    });
+                    addLog("SUCCESS", "Fájl átadva az Android megosztó rendszernek.");
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            // 3. Fallback normál letöltés
+            downloadFile(mdContent, fileName, "text/markdown");
+        }
+
+        async function exportCurrentToJSONL() {
+            if (!currentTopic || currentTopic.turns.length === 0) {
+                alert("Nincs aktív téma!");
+                return;
+            }
+
+            let jsonlLines = [];
+            currentTopic.turns.forEach(turn => {
+                const jsonObj = {
+                    messages: [
+                        { role: "system", content: "You are an expert AI assistant." },
+                        { role: "user", content: turn.userPromptEn || turn.userText },
+                        { role: "assistant", content: turn.aiResponseEn || turn.aiResponse }
+                    ],
+                    metadata: {
+                        domain: turn.domain,
+                        model_used: turn.modelUsed,
+                        timestamp: turn.timestamp
+                    }
+                };
+                jsonlLines.push(JSON.stringify(jsonObj));
+            });
+
+            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}_dataset.jsonl`;
+            downloadFile(jsonlLines.join("\n"), fileName, "application/jsonlines");
+        }
+
+        async function exportFullDatabaseJSON() {
+            const allTopics = await getAllTopicsFromDB();
+            const dump = {
+                exportDate: new Date().toISOString(),
+                databaseVersion: "3.3",
+                topics: allTopics
+            };
+            downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
         }
 
         async function createNewTopicPrompt() {
@@ -354,89 +484,6 @@
             addLog("SUCCESS", `Téma betöltve: ${currentTopic.title} (${currentTopic.turns.length} kör)`);
         }
 
-        async function exportCurrentToObsidian() {
-            if (!currentTopic || currentTopic.turns.length === 0) {
-                alert("Nincs kiválasztott téma vagy még nincsenek üzenetek a beszélgetésben!");
-                return;
-            }
-
-            const domain = document.getElementById("domain-selector").value;
-            let mdContent = `---
-topic_id: "${currentTopic.id}"
-title: "${currentTopic.title}"
-created_at: "${currentTopic.createdAt}"
-domain: "${domain}"
-total_turns: ${currentTopic.turns.length}
-tags:
-  - nexus-ai
-  - ai-training
-  - ${domain}
----
-
-# ${currentTopic.title}
-
-`;
-
-            currentTopic.turns.forEach((turn) => {
-                mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> ${turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
-            });
-
-            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
-            const savedDirectly = await saveDirectToVault(fileName, mdContent);
-            if (!savedDirectly) {
-                downloadFile(mdContent, fileName, "text/markdown");
-            }
-        }
-
-        async function exportCurrentToJSONL() {
-            if (!currentTopic || currentTopic.turns.length === 0) {
-                alert("Nincs aktív téma!");
-                return;
-            }
-
-            let jsonlLines = [];
-            currentTopic.turns.forEach(turn => {
-                const jsonObj = {
-                    messages: [
-                        { role: "system", content: "You are an expert AI assistant." },
-                        { role: "user", content: turn.userPromptEn || turn.userText },
-                        { role: "assistant", content: turn.aiResponseEn || turn.aiResponse }
-                    ],
-                    metadata: {
-                        domain: turn.domain,
-                        model_used: turn.modelUsed,
-                        timestamp: turn.timestamp
-                    }
-                };
-                jsonlLines.push(JSON.stringify(jsonObj));
-            });
-
-            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}_dataset.jsonl`;
-            const content = jsonlLines.join("\n");
-            const savedDirectly = await saveDirectToVault(fileName, content);
-            if (!savedDirectly) {
-                downloadFile(content, fileName, "application/jsonlines");
-            }
-        }
-
-        async function exportFullDatabaseJSON() {
-            const allTopics = await getAllTopicsFromDB();
-            const dump = {
-                exportDate: new Date().toISOString(),
-                databaseVersion: "3.2",
-                topics: allTopics
-            };
-            downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
-        }
-
-        function downloadFile(content, fileName, contentType) {
-            const a = document.createElement("a");
-            const file = new Blob([content], { type: contentType });
-            a.href = URL.createObjectURL(file);
-            a.download = fileName;
-            a.click();
-        }
-
         function addLog(level, message, details = null) {
             const time = new Date().toLocaleTimeString();
             logHistory.push({ time, level, message, details });
@@ -446,8 +493,6 @@ tags:
             container.scrollTop = container.scrollHeight;
         }
 
-        function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
-        function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
         function saveKeys() {
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
