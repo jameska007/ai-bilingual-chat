@@ -89,7 +89,7 @@
         </div>
     </header>
 
-    <!-- API Kulcs Beállító Panel (Láthatóság gombokkal) -->
+    <!-- API Kulcs Beállító Panel -->
     <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
@@ -225,7 +225,6 @@
             }
         }
 
-        // Kulcs láthatóságának kapcsolása
         function toggleKeyVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -283,8 +282,9 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // Gemini API hívás (Frissítve gemini-2.0-flash modellre)
         async function callGemini(apiKey, systemPrompt, userText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -299,6 +299,7 @@
             return data.candidates[0].content.parts[0].text;
         }
 
+        // Groq API hívás
         async function callGroq(apiKey, systemPrompt, userText) {
             const url = "https://api.groq.com/openai/v1/chat/completions";
             const response = await fetch(url, {
@@ -320,6 +321,7 @@
             return data.choices[0].message.content;
         }
 
+        // OpenRouter API hívás
         async function callOpenRouter(apiKey, systemPrompt, userText) {
             const url = "https://openrouter.ai/api/v1/chat/completions";
             const response = await fetch(url, {
@@ -341,43 +343,46 @@
             return data.choices[0].message.content;
         }
 
-        async function runMainTask(englishPrompt) {
+        // Egységesített automatikus váltólogika (Fallback Engine)
+        async function executeWithFallback(systemPrompt, userText, statusLabel) {
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            const systemInstruction = "You are an expert AI software developer and medical analysis assistant. Provide clear, detailed, and accurate responses.";
-
+            // 1. Próbálkozás: Gemini 2.0 Flash
             if (geminiKey) {
                 try {
-                    updateStatus("Fő modell futtatása: Gemini Flash...");
-                    return await callGemini(geminiKey, systemInstruction, englishPrompt);
+                    updateStatus(`${statusLabel} [Gemini 2.0 Flash]...`);
+                    return await callGemini(geminiKey, systemPrompt, userText);
                 } catch (e) {
-                    console.warn("Gemini sikertelen, váltás Groq-ra...", e);
+                    console.warn("Gemini hiba, váltás Groq-ra...", e);
                 }
             }
 
+            // 2. Próbálkozás: Groq Llama 3
             if (groqKey) {
                 try {
-                    updateStatus("Gemini nem elérhető -> Váltás Groq (Llama 3)-ra...");
-                    return await callGroq(groqKey, systemInstruction, englishPrompt);
+                    updateStatus(`${statusLabel} [Groq Llama 3]...`);
+                    return await callGroq(groqKey, systemPrompt, userText);
                 } catch (e) {
-                    console.warn("Groq sikertelen, váltás OpenRouter-re...", e);
+                    console.warn("Groq hiba, váltás OpenRouter-re...", e);
                 }
             }
 
+            // 3. Próbálkozás: OpenRouter
             if (openrouterKey) {
                 try {
-                    updateStatus("Groq nem elérhető -> Váltás OpenRouter-re...");
-                    return await callOpenRouter(openrouterKey, systemInstruction, englishPrompt);
+                    updateStatus(`${statusLabel} [OpenRouter]...`);
+                    return await callOpenRouter(openrouterKey, systemPrompt, userText);
                 } catch (e) {
-                    console.error("OpenRouter is sikertelen.", e);
+                    console.error("OpenRouter is hiba.", e);
                 }
             }
 
-            throw new Error("Egyetlen API sem válaszolt. Ellenőrizd a kulcsokat a jobb felső menüben!");
+            throw new Error("Egyetlen megadott API sem tudta feldolgozni a kérést! Ellenőrizd a kulcso(ka)t!");
         }
 
+        // Fő folyamatvezérlő
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
@@ -397,32 +402,17 @@
             input.style.height = 'auto';
 
             try {
-                updateStatus("1/3 Lépés: Magyar kérés fordítása és prompt-optimalizálása...");
-                const translateSystemPrompt = "You are a translator and prompt engineer. Translate the user's Hungarian query into highly structured, clear, and professional English optimized for LLMs. Output ONLY the English translation, nothing else.";
-                
-                let englishPrompt = "";
-                if (geminiKey) {
-                    englishPrompt = await callGemini(geminiKey, translateSystemPrompt, text);
-                } else if (groqKey) {
-                    englishPrompt = await callGroq(groqKey, translateSystemPrompt, text);
-                } else {
-                    englishPrompt = await callOpenRouter(openrouterKey, translateSystemPrompt, text);
-                }
+                // 1. LÉPÉS: Magyar -> Angol fordítás & Prompt optimalizálás
+                const translateSystemPrompt = "You are an expert translator and prompt engineer. Translate the user's Hungarian query into highly structured, clear, and professional English optimized for LLMs. Output ONLY the English translation, nothing else.";
+                const englishPrompt = await executeWithFallback(translateSystemPrompt, text, "1/3 Lépés: Magyar -> Angol fordítás");
 
-                updateStatus("2/3 Lépés: AI modell válaszának lekérése (Angolul)...");
-                const englishResponse = await runMainTask(englishPrompt);
+                // 2. LÉPÉS: Fő feladat lefutatása (Angolul)
+                const mainTaskSystemPrompt = "You are an expert AI software developer and medical analysis assistant. Provide clear, detailed, and highly accurate responses.";
+                const englishResponse = await executeWithFallback(mainTaskSystemPrompt, englishPrompt, "2/3 Lépés: Fő AI válasz generálása");
 
-                updateStatus("3/3 Lépés: Válasz visszafordítása Magyarra...");
-                const backTranslateSystemPrompt = "You are a professional translator. Translate the following English response into natural, fluent Hungarian. Preserve technical accuracy, code formatting, and markdown structures accurately.";
-                
-                let magyarValasz = "";
-                if (geminiKey) {
-                    magyarValasz = await callGemini(geminiKey, backTranslateSystemPrompt, englishResponse);
-                } else if (groqKey) {
-                    magyarValasz = await callGroq(groqKey, backTranslateSystemPrompt, englishResponse);
-                } else {
-                    magyarValasz = await callOpenRouter(openrouterKey, backTranslateSystemPrompt, englishResponse);
-                }
+                // 3. LÉPÉS: Angol -> Magyar visszafordítás
+                const backTranslateSystemPrompt = "You are a professional translator. Translate the following English response into natural, fluent, and accurate Hungarian. Preserve technical accuracy, code blocks, and markdown structures intact.";
+                const magyarValasz = await executeWithFallback(backTranslateSystemPrompt, englishResponse, "3/3 Lépés: Angol -> Magyar fordítás");
 
                 appendMessage("NEXUS AI", magyarValasz);
                 updateStatus("Készenlétben");
