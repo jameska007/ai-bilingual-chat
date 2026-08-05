@@ -69,9 +69,9 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.7 Ultra-Resilient</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.8 Logger</span>
                 </h1>
-                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // Zero-Breakdown Engine</p>
+                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // Real-time Debug Log</p>
             </div>
         </div>
 
@@ -81,6 +81,12 @@
                 <option value="reasoning" selected>🧠 Általános & Érvelés</option>
                 <option value="medical">🩺 Egészségügy</option>
             </select>
+
+            <!-- Debug Napló Gomb -->
+            <button onclick="toggleDebugModal()" class="flex items-center gap-1.5 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/60 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Napló</span>
+            </button>
 
             <button onclick="toggleSettings()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:border-emerald-500/50">
                 <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
@@ -149,15 +155,45 @@
         </div>
     </div>
 
+    <!-- HIBANAPLÓ (DEBUG LOG) MODAL -->
+    <div id="debug-modal" style="display: none;" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-cyber-900 border border-slate-800 w-full max-w-4xl h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-cyber-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-xs font-mono text-amber-400">
+                    <i data-lucide="bug" class="w-4 h-4"></i>
+                    <span>SYSTEM DIAGNOSTIC & API LOGS</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs px-2.5 py-1 rounded font-mono flex items-center gap-1">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Másolás
+                    </button>
+                    <button onclick="downloadLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs px-2.5 py-1 rounded font-mono flex items-center gap-1">
+                        <i data-lucide="download" class="w-3 h-3"></i> Letöltés
+                    </button>
+                    <button onclick="clearLogs()" class="bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800 text-xs px-2.5 py-1 rounded font-mono">
+                        Törlés
+                    </button>
+                    <button onclick="toggleDebugModal()" class="text-slate-400 hover:text-slate-200 ml-2">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 p-4 bg-black/60 overflow-y-auto font-mono text-xs text-slate-300 space-y-1.5 selection:bg-amber-500/30" id="debug-log-container">
+                <div class="text-slate-500">// Debug napló inicializálva. A rendszerüzenetek itt jelennek meg.</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Chat Üzenetek Területe -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // ULTRA-RESILIENT PIPELINE</span>
+                <span>SYSTEM_INITIALIZED // DEBUG LOGGER ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek! A rendszer frissítve lett a hibabiztos motorra. Írd be a kérdésedet, a NEXUS automatikusan kiválasztja a legjobb működő csatornát!
+                Üdvözöllek! Beépítettünk egy **Debug Napló** modult. Ha bármilyen hiba történik, kattints a fejlécben a sárga **Napló** gombra a pontos ok megtekintéséhez!
             </p>
         </div>
     </main>
@@ -184,13 +220,65 @@
         </div>
     </footer>
 
-    <!-- JavaScript Engine -->
+    <!-- JavaScript Engine & Logger -->
     <script>
         if (window.lucide) { lucide.createIcons(); }
 
         let shortTermMemory = [];
         let longTermSummary = "";
+        let logHistory = [];
 
+        // --- HIBANAPLÓZÓ MOTOR (DEBUG LOGGER) ---
+        function addLog(level, message, details = null) {
+            const time = new Date().toLocaleTimeString();
+            const logItem = { time, level, message, details };
+            logHistory.push(logItem);
+
+            const container = document.getElementById("debug-log-container");
+            const logDiv = document.createElement("div");
+            
+            let colorClass = "text-slate-300";
+            if (level === "ERROR") colorClass = "text-red-400 font-bold";
+            if (level === "WARN") colorClass = "text-amber-300";
+            if (level === "SUCCESS") colorClass = "text-emerald-400";
+            if (level === "INFO") colorClass = "text-cyan-300";
+
+            let html = `<span class="text-slate-500">[${time}]</span> <span class="${colorClass}">[${level}] ${message}</span>`;
+            if (details) {
+                html += `<pre class="mt-1 pl-4 text-[11px] text-slate-400 overflow-x-auto border-l border-slate-700">${typeof details === 'object' ? JSON.stringify(details, null, 2) : details}</pre>`;
+            }
+            logDiv.innerHTML = html;
+            container.appendChild(logDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function toggleDebugModal() {
+            const modal = document.getElementById("debug-modal");
+            modal.classList.toggle("hidden");
+            modal.style.display = modal.classList.contains("hidden") ? "none" : "flex";
+        }
+
+        function clearLogs() {
+            logHistory = [];
+            document.getElementById("debug-log-container").innerHTML = '<div class="text-slate-500">// Napló kiürítve.</div>';
+        }
+
+        function copyLogs() {
+            const text = logHistory.map(l => `[${l.time}] [${l.level}] ${l.message} ${l.details ? '\n' + JSON.stringify(l.details) : ''}`).join('\n');
+            navigator.clipboard.writeText(text);
+            alert("Napló kivasolva a vágólapra!");
+        }
+
+        function downloadLogs() {
+            const text = logHistory.map(l => `[${l.time}] [${l.level}] ${l.message} ${l.details ? '\n' + JSON.stringify(l.details) : ''}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `nexus_debug_log_${Date.now()}.txt`;
+            a.click();
+        }
+
+        // --- UI FUNKCIÓK ---
         const textarea = document.getElementById('user-input');
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -201,6 +289,7 @@
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
             document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
+            addLog("INFO", "NEXUS v1.8 inicializálva. Elérhető API kulcsok ellenőrizve.");
         });
 
         function toggleSettings() {
@@ -226,6 +315,7 @@
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
+            addLog("SUCCESS", "API kulcsok elmentve a localStorage-ba.");
             updateStatus("API kulcsok elmentve!");
             toggleSettings();
         }
@@ -234,6 +324,7 @@
             shortTermMemory = [];
             longTermSummary = "";
             updateMemoryTag();
+            addLog("WARN", "Munkamemória törölve a felhasználó által.");
             alert("Memória törölve!");
         }
 
@@ -277,21 +368,28 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // --- OKOS FORDÍTÓ FALLBACK-KEL ---
+        // --- STABILIZÁLT FORDÍTÓ NAPLÓZÁSSAL ---
         async function translateText(text, fromLang, toLang) {
+            addLog("INFO", `Fordítás indítása (${fromLang} -> ${toLang})...`);
             try {
                 const url = `https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`;
                 const response = await fetch(url);
-                if (!response.ok) return text;
+                if (!response.ok) {
+                    addLog("WARN", `Lingva Translate szerver elutasította (${response.status}). Natív szöveg használata.`);
+                    return text;
+                }
                 const data = await response.json();
+                addLog("SUCCESS", "Fordítás sikeres.");
                 return data.translation || text;
             } catch (e) {
-                return text; // Fordítási hiba esetén visszatér az eredeti szöveggel
+                addLog("WARN", "Lingva Translate elérése nem sikerült. Az eredeti szöveggel haladunk tovább.", e.message);
+                return text;
             }
         }
 
-        // --- GEMINI API HÍVÁS ---
+        // --- GEMINI API HÍVÁS NAPLÓZÁSSAL ---
         async function callGemini(apiKey, systemPrompt, userText) {
+            addLog("INFO", "Gemini 2.0 Flash hívása indult...");
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: "POST",
@@ -302,14 +400,18 @@
             });
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
-                throw new Error(`Gemini (${response.status}): ${errJson.error?.message || response.statusText}`);
+                const errMsg = errJson.error?.message || response.statusText;
+                addLog("ERROR", `Gemini API Hiba (${response.status})`, errJson);
+                throw new Error(`Gemini (${response.status}): ${errMsg}`);
             }
             const data = await response.json();
+            addLog("SUCCESS", "Gemini válasz sikeresen megérkezett.");
             return data.candidates[0].content.parts[0].text;
         }
 
-        // --- GROQ API HÍVÁS ---
+        // --- GROQ API HÍVÁS NAPLÓZÁSSAL ---
         async function callGroq(apiKey, systemPrompt, userText, modelName = "llama-3.3-70b-versatile") {
+            addLog("INFO", `Groq API hívása indult (${modelName})...`);
             const url = "https://api.groq.com/openai/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
@@ -321,14 +423,17 @@
             });
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
+                addLog("ERROR", `Groq API Hiba (${response.status})`, errJson);
                 throw new Error(`Groq (${response.status}): ${errJson.error?.message || response.statusText}`);
             }
             const data = await response.json();
+            addLog("SUCCESS", "Groq válasz sikeresen megérkezett.");
             return data.choices[0].message.content;
         }
 
-        // --- OPENROUTER API HÍVÁS ---
+        // --- OPENROUTER API HÍVÁS NAPLÓZÁSSAL ---
         async function callOpenRouter(apiKey, systemPrompt, userText, modelName = "deepseek/deepseek-r1:free") {
+            addLog("INFO", `OpenRouter API hívása indult (${modelName})...`);
             const url = "https://openrouter.ai/api/v1/chat/completions";
             const response = await fetch(url, {
                 method: "POST",
@@ -340,14 +445,17 @@
             });
             if (!response.ok) {
                 const errJson = await response.json().catch(() => ({}));
+                addLog("ERROR", `OpenRouter API Hiba (${response.status})`, errJson);
                 throw new Error(`OpenRouter (${response.status}): ${errJson.error?.message || response.statusText}`);
             }
             const data = await response.json();
+            addLog("SUCCESS", "OpenRouter válasz sikeresen megérkezett.");
             return data.choices[0].message.content;
         }
 
-        // --- BIZTONSÁGOS POLLINATIONS HÍVÁS (JSON/Text auto-detection) ---
+        // --- POLLINATIONS API HÍVÁS NAPLÓZÁSSAL ---
         async function callPollinationsKeyless(systemPrompt, userText, modelName = "openai") {
+            addLog("INFO", `Pollinations Kulcsmentes API hívása indult (${modelName})...`);
             const url = "https://text.pollinations.ai/";
             const response = await fetch(url, {
                 method: "POST",
@@ -360,23 +468,30 @@
                     model: modelName
                 })
             });
-            if (!response.ok) throw new Error(`Pollinations (${response.status})`);
+            if (!response.ok) {
+                addLog("ERROR", `Pollinations Hiba (${response.status})`);
+                throw new Error(`Pollinations (${response.status})`);
+            }
             
             const rawText = await response.text();
+            addLog("SUCCESS", "Pollinations válasz megérkezett.");
             try {
                 const parsed = JSON.parse(rawText);
                 return parsed.choices?.[0]?.message?.content || parsed.text || rawText;
             } catch (e) {
-                return rawText; // Ha nem JSON, közvetlenül a nyers szöveget adja vissza
+                return rawText;
             }
         }
 
-        // --- FAILOVER ENGINE RÉSZLETES HIBALOGGOLÁSSAL ---
+        // --- EXECUTION ENGINE NAPLÓZÁSSAL ---
         async function executeSmartPipeline(systemPrompt, userPromptText) {
             const domain = document.getElementById("domain-selector").value;
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
+
+            addLog("INFO", `Végrehajtás indítása a(z) '${domain}' kategóriában.`);
+            addLog("INFO", `Rendelkezésre álló kulcsok: Gemini=${!!geminiKey}, Groq=${!!groqKey}, OpenRouter=${!!openrouterKey}`);
 
             let contextText = "";
             if (longTermSummary) {
@@ -393,37 +508,42 @@
                 if (groqKey) executionChain.push({ name: "Groq (Qwen Coder)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "qwen-2.5-coder-32b") });
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
                 if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             } else if (domain === "medical") {
                 if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on pathophysiological accuracy.", inputWithContext) });
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
                 if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             } else {
                 if (geminiKey) executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext) });
                 if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
                 if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+                executionChain.push({ name: "Pollinations (Keyless)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
             }
 
             let errorLogs = [];
 
             for (const step of executionChain) {
                 try {
+                    addLog("INFO", `Próbálkozás a következővel: ${step.name}`);
                     updateStatus(`Futtatás: ${step.name}...`);
                     const response = await step.fn();
+                    addLog("SUCCESS", `Sikeres válaszadás ettől a modelltől: ${step.name}`);
                     return { response, modelUsed: step.name };
                 } catch (err) {
-                    console.warn(`Hiba a(z) ${step.name} csatornán:`, err.message);
+                    addLog("WARN", `${step.name} sikertelen volt. Lépés a következőre.`, err.message);
                     errorLogs.push(`${step.name}: ${err.message}`);
                 }
             }
 
-            throw new Error("Minden csatorna sikertelen volt. Részletes hibaüzenetek:\n\n" + errorLogs.join("\n"));
+            const finalError = "Minden csatorna sikertelen volt. Részletek:\n" + errorLogs.join("\n");
+            addLog("ERROR", finalError);
+            throw new Error(finalError);
         }
 
         async function compressMemoryIfNeeded() {
             if (shortTermMemory.length >= 3) {
+                addLog("INFO", "Rövid távú memória betelt (3 kör). Tömörítés indítása...");
                 updateStatus("Memória tömörítése...");
                 const toCompress = shortTermMemory.splice(0, 2);
                 const summaryPrompt = "Summarize the key facts from this conversation into a brief memory context.";
@@ -432,9 +552,10 @@
                 try {
                     const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "openai");
                     longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
+                    addLog("SUCCESS", "LTM kivonat sikeresen frissült.");
                     updateMemoryTag();
                 } catch (e) {
-                    console.warn("Memóriatömörítés kihagyva:", e);
+                    addLog("WARN", "Memóriatömörítés nem sikerült.", e.message);
                 }
             }
         }
@@ -444,6 +565,7 @@
             const text = input.value.trim();
             if (!text) return;
 
+            addLog("INFO", `Felhasználói kérés elküldve: "${text.substring(0, 30)}..."`);
             appendMessage("Felhasználó", text);
             input.value = "";
             input.style.height = 'auto';
@@ -470,6 +592,8 @@
                 console.error(error);
                 appendMessage("Rendszer Hiba", error.message, true);
                 updateStatus("Hiba történt a feldolgozás során");
+                // Hiba esetén automatikusan felugrik a Debug Napló modal
+                toggleDebugModal();
             }
         }
     </script>
