@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dual-Language Chat</title>
+    <!-- Tailwind CSS a letisztult, modern felületért -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex flex-col font-sans">
+
+    <!-- Fejléc -->
+    <header class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center shadow-md">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🤖</span>
+            <h1 class="text-lg font-bold text-emerald-400">Bilingual AI Assistant</h1>
+        </div>
+        <button onclick="toggleSettings()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-sm text-slate-200 transition">
+            ⚙️ API Kulcsok
+        </button>
+    </header>
+
+    <!-- API Kulcs Beállító Panel -->
+    <div id="settings-panel" class="hidden bg-slate-800 p-4 border-b border-slate-700 space-y-3">
+        <p class="text-xs text-slate-400">Az API kulcsok biztonságosan, kizárólag a tableted böngészőjében tárolódnak.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <input type="password" id="groq-key" placeholder="Groq API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" class="bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+        </div>
+        <button onclick="saveKeys()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">
+            Kulcsok Mentése
+        </button>
+    </div>
+
+    <!-- Chat Üzenetek Területe -->
+    <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="bg-slate-800 border border-slate-700 p-3.5 rounded-xl max-w-2xl text-slate-300 text-sm">
+            👋 Üdvözöllek! Katints a jobb felső sarokban a **⚙️ API Kulcsok** gombra, másold be a megszerzett kulcsokat, majd mentsd el őket!
+        </div>
+    </div>
+
+    <!-- Állapotjelző Sáv -->
+    <div id="status-bar" class="px-4 py-1 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+        Rendszer állapota: Készenlétben
+    </div>
+
+    <!-- Beviteli Mező -->
+    <div class="bg-slate-800 p-3 border-t border-slate-700 flex gap-2">
+        <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul (pl. kódolási hiba, orvosi kérdés)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-emerald-500 resize-none text-sm"></textarea>
+        <button onclick="handleSend()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-lg font-medium transition text-sm">
+            Küldés
+        </button>
+    </div>
+
+    <!-- JavaScript Logika (Alapkezelés) -->
+    <script>
+        // API kulcsok betöltése böngésző tárolóból
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
+            document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
+            document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
+        });
+
+        function toggleSettings() {
+            const panel = document.getElementById("settings-panel");
+            panel.classList.toggle("hidden");
+        }
+
+        function saveKeys() {
+            localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
+            localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
+            localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
+            alert("API kulcsok elmentve a tableten!");
+            toggleSettings();
+        }
+
+        function appendMessage(sender, text, isError = false) {
+            const chatBox = document.getElementById("chat-box");
+            const msgDiv = document.createElement("div");
+            
+            const isUser = sender === "Felhasználó";
+            msgDiv.className = `p-3.5 rounded-xl max-w-2xl text-sm ${
+                isUser 
+                ? "bg-emerald-900/40 border border-emerald-700/50 ml-auto text-emerald-100" 
+                : isError 
+                ? "bg-red-900/40 border border-red-700/50 text-red-200"
+                : "bg-slate-800 border border-slate-700 text-slate-200"
+            }`;
+            
+            msgDiv.innerHTML = `<strong>${sender}:</strong><br><div class="mt-1 whitespace-pre-wrap">${text}</div>`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateStatus(text) {
+            document.getElementById("status-bar").innerText = "Rendszer állapota: " + text;
+        }
+
+        function handleSend() {
+            const input = document.getElementById("user-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage("Felhasználó", text);
+            input.value = "";
+            
+            // Ide építjük be a következő lépésben a fordító és modellváltó logikát!
+            updateStatus("Feldolgozás alatt...");
+        }
+    </script>
+</body>
+</html>
