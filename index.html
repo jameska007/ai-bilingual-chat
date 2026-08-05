@@ -62,23 +62,28 @@
         <div class="flex items-center gap-3">
             <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30">
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
-                <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v2.1 Ultimate</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.1 Direct-Vault</span>
                 </h1>
-                <p class="text-[11px] text-slate-400 font-mono">Smart Routing // Zero-Error Failover</p>
+                <p class="text-[11px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
+            <button onclick="createNewTopicPrompt()" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-emerald">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                <span>Új téma</span>
+            </button>
+
+            <select id="recent-topics-select" onchange="switchTopic(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500 max-w-[150px] truncate">
+                <option value="">📁 Recent témák...</option>
+            </select>
+
             <select id="domain-selector" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500">
                 <option value="coding">💻 Kódolás</option>
-                <option value="reasoning" selected>🧠 Általános & Érvelés</option>
+                <option value="reasoning" selected>🧠 Általános</option>
                 <option value="medical">🩺 Egészségügy</option>
             </select>
 
@@ -89,17 +94,17 @@
 
             <button onclick="toggleSettings()" class="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:border-emerald-500/50">
                 <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
-                <span>API Keys</span>
+                <span>Beállítások</span>
             </button>
         </div>
     </header>
 
-    <!-- API Kulcs Beállító Panel -->
+    <!-- Beállító Panel -->
     <div id="settings-panel" style="display: none;" class="hidden bg-cyber-900/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-3 z-10 transition-all">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
-                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                <span>LOCAL ENCRYPTED STORAGE (TABLET ONLY)</span>
+                <i data-lucide="database" class="w-4 h-4"></i>
+                <span>LOCAL STORAGE & DIRECT VAULT ACCESS</span>
             </div>
             <button onclick="toggleSettings()" class="text-slate-500 hover:text-slate-300">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -108,48 +113,40 @@
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="space-y-1">
-                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                    <i data-lucide="sparkles" class="w-3 h-3 text-cyan-400"></i> Gemini API Key
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg pl-3 pr-8 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500/80 transition">
-                    <button type="button" onclick="toggleKeyVisibility('gemini-key', 'gemini-eye')" class="absolute right-2 text-slate-500 hover:text-slate-300">
-                        <i id="gemini-eye" data-lucide="eye" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">Gemini API Key</label>
+                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
             </div>
 
             <div class="space-y-1">
-                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                    <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Groq API Key
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg pl-3 pr-8 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500/80 transition">
-                    <button type="button" onclick="toggleKeyVisibility('groq-key', 'groq-eye')" class="absolute right-2 text-slate-500 hover:text-slate-300">
-                        <i id="groq-eye" data-lucide="eye" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">Groq API Key</label>
+                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
             </div>
 
             <div class="space-y-1">
-                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                    <i data-lucide="network" class="w-3 h-3 text-purple-400"></i> OpenRouter Key
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="openrouter-key" placeholder="sk-or-..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg pl-3 pr-8 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-purple-500/80 transition">
-                    <button type="button" onclick="toggleKeyVisibility('openrouter-key', 'openrouter-eye')" class="absolute right-2 text-slate-500 hover:text-slate-300">
-                        <i id="openrouter-eye" data-lucide="eye" class="w-3.5 h-3.5"></i>
-                    </button>
-                </div>
+                <label class="text-[11px] font-mono text-slate-400 flex items-center gap-1">OpenRouter Key</label>
+                <input type="password" id="openrouter-key" placeholder="sk-or-..." class="w-full bg-cyber-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono">
             </div>
         </div>
 
-        <div class="flex justify-between items-center pt-1">
-            <button onclick="clearMemory()" class="text-xs text-red-400 hover:text-red-300 font-mono flex items-center gap-1">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Memória törlése
-            </button>
-            <button onclick="saveKeys()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition glow-emerald">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i> Mentés & Aktiválás
+        <!-- Mappa Kijelölés és Export Gombok -->
+        <div class="flex flex-wrap justify-between items-center pt-2 border-t border-slate-800 gap-2">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="selectObsidianFolder()" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold border border-amber-500 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1 shadow-md">
+                    <i data-lucide="folder-input" class="w-3.5 h-3.5"></i> <span id="vault-folder-status">📁 Obsidian Mappa Kijelölése</span>
+                </button>
+                <button onclick="exportCurrentToObsidian()" class="bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-800 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
+                    <i data-lucide="file-output" class="w-3.5 h-3.5"></i> Export Obsidian (.md)
+                </button>
+                <button onclick="exportCurrentToJSONL()" class="bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 border border-cyan-800 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i> Export Dataset (.jsonl)
+                </button>
+                <button onclick="exportFullDatabaseJSON()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1">
+                    <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Full DB Backup (.json)
+                </button>
+            </div>
+
+            <button onclick="saveKeys()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded text-xs font-semibold glow-emerald font-mono">
+                Mentés
             </button>
         </div>
     </div>
@@ -159,28 +156,11 @@
         <div class="bg-cyber-900 border border-slate-800 w-full max-w-4xl h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
             <div class="bg-cyber-950 px-4 py-3 border-b border-slate-800 flex justify-between items-center">
                 <div class="flex items-center gap-2 text-xs font-mono text-amber-400">
-                    <i data-lucide="bug" class="w-4 h-4"></i>
-                    <span>SYSTEM DIAGNOSTIC & API LOGS</span>
+                    <i data-lucide="bug" class="w-4 h-4"></i> SYSTEM LOGS
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="copyLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs px-2.5 py-1 rounded font-mono flex items-center gap-1">
-                        <i data-lucide="copy" class="w-3 h-3"></i> Másolás
-                    </button>
-                    <button onclick="downloadLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs px-2.5 py-1 rounded font-mono flex items-center gap-1">
-                        <i data-lucide="download" class="w-3 h-3"></i> Letöltés
-                    </button>
-                    <button onclick="clearLogs()" class="bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800 text-xs px-2.5 py-1 rounded font-mono">
-                        Törlés
-                    </button>
-                    <button onclick="toggleDebugModal()" class="text-slate-400 hover:text-slate-200 ml-2">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
+                <button onclick="toggleDebugModal()" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            
-            <div class="flex-1 p-4 bg-black/60 overflow-y-auto font-mono text-xs text-slate-300 space-y-1.5 selection:bg-amber-500/30" id="debug-log-container">
-                <div class="text-slate-500">// Debug napló inicializálva. A rendszerüzenetek itt jelennek meg.</div>
-            </div>
+            <div class="flex-1 p-4 bg-black/60 overflow-y-auto font-mono text-xs text-slate-300 space-y-1.5" id="debug-log-container"></div>
         </div>
     </div>
 
@@ -189,10 +169,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // ULTIMATE FAILOVER ACTIVE</span>
+                <span>SYSTEM_READY // DIRECT FILE ACCESS ENABLED</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek! A rendszer mostantól intelligensen felismeri, ha egy API-kulcs kimerült, és azonnal átvált a garantáltan működő kulcsmentes csatornára!
+                Kattints a **Beállítások $\rightarrow$ 📁 Obsidian Mappa Kijelölése** gombra az engedély megadásához! Ezután minden mentés közvetlenül a kiválasztott Obsidian mappába kerül.
             </p>
         </div>
     </main>
@@ -204,15 +184,14 @@
             <span id="status-bar">Rendszer: Készenlétben</span>
         </div>
         <div id="active-model-tag" class="text-[10px] text-emerald-400 font-mono hidden sm:block">
-            Memória: 0 kör | Tömörítés: Inaktív
+            Téma adatrekordok: 0
         </div>
     </div>
 
     <!-- Beviteli mező -->
     <footer class="bg-cyber-900/90 border-t border-slate-800/80 p-3 md:p-4 backdrop-blur-md">
         <div class="max-w-4xl mx-auto flex items-end gap-2 bg-cyber-950 border border-slate-800 rounded-xl p-2 focus-within:border-emerald-500/70 transition-all">
-            <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
-            
+            <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
             <button onclick="handleSend()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-lg transition-all flex items-center justify-center glow-emerald shrink-0">
                 <i data-lucide="send" class="w-4 h-4"></i>
             </button>
@@ -223,313 +202,330 @@
     <script>
         if (window.lucide) { lucide.createIcons(); }
 
-        let shortTermMemory = [];
-        let longTermSummary = "";
+        let currentTopic = null;
         let logHistory = [];
+        let db = null;
+        let obsidianDirHandle = null; // Direct Directory Access Handle
 
-        function addLog(level, message, details = null) {
-            const time = new Date().toLocaleTimeString();
-            const logItem = { time, level, message, details };
-            logHistory.push(logItem);
+        // --- INDEXEDDB INICIALIZÁLÁS ---
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("NEXUS_Workstation_DB", 1);
+                request.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains("topics")) {
+                        dbInstance.createObjectStore("topics", { keyPath: "id" });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    addLog("SUCCESS", "IndexedDB helyi adatbázis csatlakoztatva.");
+                    refreshRecentTopicsList();
+                    resolve(db);
+                };
+                request.onerror = (e) => {
+                    addLog("ERROR", "IndexedDB hiba", e);
+                    reject(e);
+                };
+            });
+        }
 
-            const container = document.getElementById("debug-log-container");
-            const logDiv = document.createElement("div");
-            
-            let colorClass = "text-slate-300";
-            if (level === "ERROR") colorClass = "text-red-400 font-bold";
-            if (level === "WARN") colorClass = "text-amber-300";
-            if (level === "SUCCESS") colorClass = "text-emerald-400";
-            if (level === "INFO") colorClass = "text-cyan-300";
-
-            let html = `<span class="text-slate-500">[${time}]</span> <span class="${colorClass}">[${level}] ${message}</span>`;
-            if (details) {
-                html += `<pre class="mt-1 pl-4 text-[11px] text-slate-400 overflow-x-auto border-l border-slate-700">${typeof details === 'object' ? JSON.stringify(details, null, 2) : details}</pre>`;
+        // --- DIRECT FILE SYSTEM ACCESS API ---
+        async function selectObsidianFolder() {
+            try {
+                if ('showDirectoryPicker' in window) {
+                    obsidianDirHandle = await window.showDirectoryPicker({
+                        mode: 'readwrite'
+                    });
+                    document.getElementById("vault-folder-status").innerText = "✓ Obsidian Mappa Aktív";
+                    addLog("SUCCESS", `Direct Vault Mappa beállítva: ${obsidianDirHandle.name}`);
+                    alert(`Közvetlen elérés engedélyezve ehhez a mappához: ${obsidianDirHandle.name}`);
+                } else {
+                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Normál letöltésként fog működni.");
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    addLog("ERROR", "Mappa kijelölési hiba", err);
+                    alert("Nem sikerült megadni a mappa engedélyt.");
+                }
             }
-            logDiv.innerHTML = html;
-            container.appendChild(logDiv);
-            container.scrollTop = container.scrollHeight;
         }
 
-        function toggleDebugModal() {
-            const modal = document.getElementById("debug-modal");
-            modal.classList.toggle("hidden");
-            modal.style.display = modal.classList.contains("hidden") ? "none" : "flex";
+        async function saveDirectToVault(filename, content) {
+            if (obsidianDirHandle) {
+                try {
+                    const fileHandle = await obsidianDirHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(content);
+                    await writable.close();
+                    addLog("SUCCESS", `Fájl közvetlenül a Vaultba írva: ${filename}`);
+                    alert(`Fájl elmentve az Obsidian mappába:\n${filename}`);
+                    return true;
+                } catch (e) {
+                    addLog("WARN", "Közvetlen írás sikertelen, váltás letöltésre...", e);
+                }
+            }
+            return false;
         }
 
-        function clearLogs() {
-            logHistory = [];
-            document.getElementById("debug-log-container").innerHTML = '<div class="text-slate-500">// Napló kiürítve.</div>';
+        // --- TÉMA KEZELÉS ---
+        async function createNewTopicPrompt() {
+            const title = prompt("Adj meg egy nevet az új témának:");
+            if (!title || !title.trim()) return;
+
+            const topicId = "topic_" + Date.now();
+            currentTopic = {
+                id: topicId,
+                title: title.trim(),
+                createdAt: new Date().toISOString(),
+                turns: []
+            };
+
+            await saveTopicToDB(currentTopic);
+            await refreshRecentTopicsList();
+            
+            document.getElementById("recent-topics-select").value = topicId;
+            document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
+
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = `
+                <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">
+                    ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"
+                </div>
+            `;
+            updateMemoryTag();
+            addLog("INFO", `Új téma létrehozva: ${currentTopic.title}`);
         }
 
-        function copyLogs() {
-            const text = logHistory.map(l => `[${l.time}] [${l.level}] ${l.message} ${l.details ? '\n' + JSON.stringify(l.details) : ''}`).join('\n');
-            navigator.clipboard.writeText(text);
-            alert("Napló kimásolva a vágólapra!");
+        function saveTopicToDB(topic) {
+            return new Promise((resolve, reject) => {
+                if (!db) return resolve();
+                const tx = db.transaction("topics", "readwrite");
+                const store = tx.objectStore("topics");
+                store.put(topic);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
         }
 
-        function downloadLogs() {
-            const text = logHistory.map(l => `[${l.time}] [${l.level}] ${l.message} ${l.details ? '\n' + JSON.stringify(l.details) : ''}`).join('\n');
-            const blob = new Blob([text], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `nexus_debug_log_${Date.now()}.txt`;
+        function getAllTopicsFromDB() {
+            return new Promise((resolve) => {
+                if (!db) return resolve([]);
+                const tx = db.transaction("topics", "readonly");
+                const store = tx.objectStore("topics");
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve([]);
+            });
+        }
+
+        async function refreshRecentTopicsList() {
+            const topics = await getAllTopicsFromDB();
+            const select = document.getElementById("recent-topics-select");
+            select.innerHTML = '<option value="">📁 Recent témák...</option>';
+            
+            topics.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            topics.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t.id;
+                opt.innerText = t.title;
+                select.appendChild(opt);
+            });
+        }
+
+        async function switchTopic(topicId) {
+            if (!topicId) return;
+            const topics = await getAllTopicsFromDB();
+            const found = topics.find(t => t.id === topicId);
+            if (!found) return;
+
+            currentTopic = found;
+            document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
+            
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = "";
+
+            currentTopic.turns.forEach(turn => {
+                appendMessage("Felhasználó", turn.userText);
+                appendMessage(`NEXUS AI (${turn.modelUsed})`, turn.aiResponse);
+            });
+
+            updateMemoryTag();
+            addLog("SUCCESS", `Téma betöltve: ${currentTopic.title} (${currentTopic.turns.length} kör)`);
+        }
+
+        // --- EXPORTÁLÁSI FUNKCIÓK ---
+        async function exportCurrentToObsidian() {
+            if (!currentTopic || currentTopic.turns.length === 0) {
+                alert("Nincs aktív téma vagy üres a csevegés!");
+                return;
+            }
+
+            const domain = document.getElementById("domain-selector").value;
+            let mdContent = `---
+topic_id: "${currentTopic.id}"
+title: "${currentTopic.title}"
+created_at: "${currentTopic.createdAt}"
+domain: "${domain}"
+total_turns: ${currentTopic.turns.length}
+tags:
+  - nexus-ai
+  - ai-training
+  - ${domain}
+---
+
+# ${currentTopic.title}
+
+`;
+
+            currentTopic.turns.forEach((turn, idx) => {
+                mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> ${turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
+            });
+
+            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
+            const savedDirectly = await saveDirectToVault(fileName, mdContent);
+            if (!savedDirectly) {
+                downloadFile(mdContent, fileName, "text/markdown");
+            }
+        }
+
+        async function exportCurrentToJSONL() {
+            if (!currentTopic || currentTopic.turns.length === 0) {
+                alert("Nincs aktív téma!");
+                return;
+            }
+
+            let jsonlLines = [];
+            currentTopic.turns.forEach(turn => {
+                const jsonObj = {
+                    messages: [
+                        { role: "system", content: "You are an expert AI assistant." },
+                        { role: "user", content: turn.userPromptEn || turn.userText },
+                        { role: "assistant", content: turn.aiResponseEn || turn.aiResponse }
+                    ],
+                    metadata: {
+                        domain: turn.domain,
+                        model_used: turn.modelUsed,
+                        timestamp: turn.timestamp
+                    }
+                };
+                jsonlLines.push(JSON.stringify(jsonObj));
+            });
+
+            const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}_dataset.jsonl`;
+            const content = jsonlLines.join("\n");
+            const savedDirectly = await saveDirectToVault(fileName, content);
+            if (!savedDirectly) {
+                downloadFile(content, fileName, "application/jsonlines");
+            }
+        }
+
+        async function exportFullDatabaseJSON() {
+            const allTopics = await getAllTopicsFromDB();
+            const dump = {
+                exportDate: new Date().toISOString(),
+                databaseVersion: "3.1",
+                topics: allTopics
+            };
+            downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            const a = document.createElement("a");
+            const file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
             a.click();
         }
 
-        const textarea = document.getElementById('user-input');
-        textarea.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
-            document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
-            document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
-            addLog("INFO", "NEXUS v2.1 (Ultimate Failover) betöltve.");
-        });
-
-        function toggleSettings() {
-            const panel = document.getElementById("settings-panel");
-            panel.classList.toggle("hidden");
-            panel.style.display = panel.classList.contains("hidden") ? "none" : "block";
+        // --- UTIL & LOGS ---
+        function addLog(level, message, details = null) {
+            const time = new Date().toLocaleTimeString();
+            logHistory.push({ time, level, message, details });
+            const container = document.getElementById("debug-log-container");
+            const colorClass = level === "ERROR" ? "text-red-400 font-bold" : level === "WARN" ? "text-amber-300" : level === "SUCCESS" ? "text-emerald-400" : "text-cyan-300";
+            container.innerHTML += `<div><span class="text-slate-500">[${time}]</span> <span class="${colorClass}">[${level}] ${message}</span></div>`;
+            container.scrollTop = container.scrollHeight;
         }
 
-        function toggleKeyVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.setAttribute("data-lucide", "eye-off");
-            } else {
-                input.type = "password";
-                icon.setAttribute("data-lucide", "eye");
-            }
-            if (window.lucide) { lucide.createIcons(); }
-        }
-
+        function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
+        function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
         function saveKeys() {
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
             addLog("SUCCESS", "API kulcsok mentve.");
-            updateStatus("API kulcsok elmentve!");
             toggleSettings();
         }
 
-        function clearMemory() {
-            shortTermMemory = [];
-            longTermSummary = "";
-            updateMemoryTag();
-            addLog("WARN", "Memória törölve.");
-            alert("Memória törölve!");
-        }
-
-        function updateStatus(text) {
-            document.getElementById("status-bar").innerText = "Rendszer: " + text;
-        }
-
+        function updateStatus(text) { document.getElementById("status-bar").innerText = "Rendszer: " + text; }
         function updateMemoryTag() {
             const tag = document.getElementById("active-model-tag");
-            tag.innerText = `Memória: ${shortTermMemory.length} kör | Kivonat: ${longTermSummary ? 'Aktív' : 'Üres'}`;
+            const count = currentTopic ? currentTopic.turns.length : 0;
+            tag.innerText = `Téma adatrekordok: ${count}`;
         }
 
         function appendMessage(sender, text, isError = false) {
             const chatBox = document.getElementById("chat-box");
             const isUser = sender === "Felhasználó";
-            
             const msgWrapper = document.createElement("div");
             msgWrapper.className = `flex ${isUser ? "justify-end" : "justify-start"} max-w-3xl mx-auto w-full`;
-
             const msgDiv = document.createElement("div");
-            msgDiv.className = `p-4 rounded-2xl text-sm leading-relaxed max-w-[85%] border shadow-lg transition-all ${
-                isUser 
-                ? "bg-gradient-to-br from-emerald-950/80 to-slate-900 border-emerald-600/40 text-emerald-50 text-right rounded-tr-none" 
-                : isError 
-                ? "bg-red-950/50 border-red-800/60 text-red-200 rounded-tl-none"
-                : "bg-cyber-900/90 border-slate-800 text-slate-200 rounded-tl-none"
-            }`;
-
-            const headerHtml = `
-                <div class="flex items-center gap-2 mb-1 text-[11px] font-mono text-slate-400 ${isUser ? "justify-end text-emerald-400" : ""}">
-                    <i data-lucide="${isUser ? 'user' : 'bot'}" class="w-3.5 h-3.5"></i>
-                    <span>${sender}</span>
-                </div>
-            `;
-
-            msgDiv.innerHTML = headerHtml + `<div class="whitespace-pre-wrap ${isUser ? "text-left" : ""}">${text}</div>`;
+            msgDiv.className = `p-4 rounded-2xl text-sm leading-relaxed max-w-[85%] border shadow-lg ${isUser ? "bg-gradient-to-br from-emerald-950/80 to-slate-900 border-emerald-600/40 text-emerald-50 text-right rounded-tr-none" : isError ? "bg-red-950/50 border-red-800/60 text-red-200 rounded-tl-none" : "bg-cyber-900/90 border-slate-800 text-slate-200 rounded-tl-none"}`;
+            msgDiv.innerHTML = `<div class="flex items-center gap-2 mb-1 text-[11px] font-mono text-slate-400 ${isUser ? "justify-end text-emerald-400" : ""}"><span>${sender}</span></div><div class="whitespace-pre-wrap ${isUser ? "text-left" : ""}">${text}</div>`;
             msgWrapper.appendChild(msgDiv);
             chatBox.appendChild(msgWrapper);
-            
-            if (window.lucide) { lucide.createIcons(); }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // --- NETWORK API ENGINE ---
         async function translateText(text, fromLang, toLang) {
-            addLog("INFO", `Fordítás indítása (${fromLang} -> ${toLang})...`);
             try {
-                const url = `https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`;
-                const response = await fetch(url);
-                if (!response.ok) return text;
-                const data = await response.json();
-                return data.translation || text;
-            } catch (e) {
-                return text;
-            }
+                const res = await fetch(`https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`);
+                if (!res.ok) return text;
+                const d = await res.json();
+                return d.translation || text;
+            } catch (e) { return text; }
         }
 
-        async function callGemini(apiKey, systemPrompt, userText, modelName = "gemini-2.0-flash") {
-            addLog("INFO", `Gemini hívása indult (${modelName})...`);
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nInput: ${userText}` }] }]
-                })
-            });
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}));
-                const errMsg = errJson.error?.message || response.statusText;
-                addLog("WARN", `Gemini (${modelName}) hiba (${response.status}): ${errMsg}`);
-                throw new Error(`Gemini ${modelName} (${response.status}): ${errMsg}`);
-            }
-            const data = await response.json();
-            addLog("SUCCESS", `Gemini (${modelName}) válasz megérkezett.`);
-            return data.candidates[0].content.parts[0].text;
-        }
-
-        async function callGroq(apiKey, systemPrompt, userText, modelName = "llama-3.3-70b-versatile") {
-            addLog("INFO", `Groq hívása indult (${modelName})...`);
-            const url = "https://api.groq.com/openai/v1/chat/completions";
-            const response = await fetch(url, {
+        async function callGroq(apiKey, systemPrompt, userText) {
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }]
-                })
+                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }] })
             });
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}));
-                addLog("WARN", `Groq hiba (${response.status})`, errJson);
-                throw new Error(`Groq (${status}): ${errJson.error?.message || response.statusText}`);
-            }
-            const data = await response.json();
-            addLog("SUCCESS", "Groq válasz megérkezett.");
-            return data.choices[0].message.content;
+            if (!res.ok) throw new Error(`Groq (${res.status})`);
+            const d = await res.json();
+            return d.choices[0].message.content;
         }
 
-        async function callOpenRouter(apiKey, systemPrompt, userText, modelName = "deepseek/deepseek-r1:free") {
-            addLog("INFO", `OpenRouter hívása indult (${modelName})...`);
-            const url = "https://openrouter.ai/api/v1/chat/completions";
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }]
-                })
-            });
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}));
-                addLog("WARN", `OpenRouter hiba (${response.status})`, errJson);
-                throw new Error(`OpenRouter (${response.status}): ${errJson.error?.message || response.statusText}`);
-            }
-            const data = await response.json();
-            addLog("SUCCESS", "OpenRouter válasz megérkezett.");
-            return data.choices[0].message.content;
-        }
-
-        // --- BIZTONSÁGOS KULCSMENTES POLLINATIONS (Modell-specifikus fallback nélkül) ---
         async function callPollinationsKeyless(systemPrompt, userText) {
-            addLog("INFO", "Pollinations Kulcsmentes API hívás indult...");
-            const combinedPrompt = `${systemPrompt}\n\nTask: ${userText}`;
-            // Modell paraméter elhagyva, így a Pollinations automatikusan a legmegbízhatóbb ingyenes útvonalat adja
-            const url = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}`;
-            
-            const response = await fetch(url, { method: "GET" });
-            if (!response.ok) {
-                addLog("WARN", `Pollinations GET Hiba (${response.status})`);
-                throw new Error(`Pollinations (${response.status})`);
-            }
-            
-            const text = await response.text();
-            if (!text || text.trim().length === 0) throw new Error("Pollinations üres választ adott.");
-            addLog("SUCCESS", "Pollinations kulcsmentes válasz sikeresen megérkezett!");
-            return text;
+            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(`${systemPrompt}\n\nTask: ${userText}`)}`);
+            if (!res.ok) throw new Error(`Pollinations (${res.status})`);
+            return await res.text();
         }
 
         async function executeSmartPipeline(systemPrompt, userPromptText) {
-            const domain = document.getElementById("domain-selector").value;
-            const geminiKey = localStorage.getItem("GEMINI_KEY");
             const groqKey = localStorage.getItem("GROQ_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            let contextText = "";
-            if (longTermSummary) {
-                contextText += `[SUMMARY]:\n${longTermSummary}\n\n`;
+            let historyContext = "";
+            if (currentTopic && currentTopic.turns.length > 0) {
+                historyContext = "[PREVIOUS CHAT HISTORY IN THIS TOPIC]:\n" + 
+                    currentTopic.turns.map(t => `User: ${t.userPromptEn || t.userText}\nAI: ${t.aiResponseEn || t.aiResponse}`).join("\n\n") + "\n\n";
             }
-            if (shortTermMemory.length > 0) {
-                contextText += `[RECENT TURNS]:\n` + shortTermMemory.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n") + `\n\n`;
-            }
-            const inputWithContext = `${contextText}[USER QUERY]: ${userPromptText}`;
+            const fullInput = `${historyContext}[CURRENT QUERY]: ${userPromptText}`;
 
-            let executionChain = [];
-
-            // 1. Ha van érvényes Groq vagy OpenRouter kulcs, azt tesszük előre (mert a Gemini kimerült)
             if (groqKey) {
-                executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "llama-3.3-70b-versatile") });
-            }
-            if (openrouterKey) {
-                executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-            }
-
-            // 2. Garantáltan ingyenes, kulcsmentes csatorna (Bármilyen Gemini tiltás vagy hiányzó kulcs esetén azonnal lefut)
-            executionChain.push({ name: "Pollinations (Keyless Direct)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext) });
-
-            // 3. Gemini csak a végén (ha esetleg mégis frissülne a kvóta)
-            if (geminiKey) {
-                executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
-            }
-
-            let errorLogs = [];
-
-            for (const step of executionChain) {
                 try {
-                    addLog("INFO", `Próbálkozás: ${step.name}`);
-                    updateStatus(`Futtatás: ${step.name}...`);
-                    const response = await step.fn();
-                    addLog("SUCCESS", `Sikeres válaszadás ettől a modelltől: ${step.name}`);
-                    return { response, modelUsed: step.name };
-                } catch (err) {
-                    addLog("WARN", `${step.name} sikertelen volt. Lépés a következőre.`);
-                    errorLogs.push(`${step.name}: ${err.message}`);
-                }
+                    updateStatus("Futtatás: Groq (Llama 3.3)...");
+                    const response = await callGroq(groqKey, systemPrompt, fullInput);
+                    return { response, modelUsed: "Groq (Llama 3.3)" };
+                } catch (e) { addLog("WARN", "Groq hiba, váltás Pollinationsra."); }
             }
 
-            const finalError = "Minden csatorna sikertelen volt. Részletek:\n" + errorLogs.join("\n");
-            addLog("ERROR", finalError);
-            throw new Error(finalError);
-        }
-
-        async function compressMemoryIfNeeded() {
-            if (shortTermMemory.length >= 3) {
-                addLog("INFO", "Tömörítés indítása...");
-                updateStatus("Memória tömörítése...");
-                const toCompress = shortTermMemory.splice(0, 2);
-                const summaryPrompt = "Summarize the key facts from this conversation into a brief memory context.";
-                const conversationText = toCompress.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n");
-                
-                try {
-                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText);
-                    longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
-                    addLog("SUCCESS", "Memória tömörítve.");
-                    updateMemoryTag();
-                } catch (e) {
-                    addLog("WARN", "Memóriatömörítés kihagyva.", e.message);
-                }
-            }
+            updateStatus("Futtatás: Pollinations (Kulcsmentes)...");
+            const response = await callPollinationsKeyless(systemPrompt, fullInput);
+            return { response, modelUsed: "Pollinations (Keyless)" };
         }
 
         async function handleSend() {
@@ -537,7 +533,11 @@
             const text = input.value.trim();
             if (!text) return;
 
-            addLog("INFO", `Új feladat elküldve.`);
+            if (!currentTopic) {
+                await createNewTopicPrompt();
+                if (!currentTopic) return;
+            }
+
             appendMessage("Felhasználó", text);
             input.value = "";
             input.style.height = 'auto';
@@ -547,7 +547,7 @@
                 const englishPrompt = await translateText(text, "hu", "en");
 
                 updateStatus("2/3 Lépés: AI modell válaszol...");
-                const systemPrompt = "You are an expert AI software developer and technical assistant. Respond in clear detail.";
+                const systemPrompt = "You are an expert software developer and analytical assistant. Respond in detail.";
                 const { response: rawAiResponse, modelUsed } = await executeSmartPipeline(systemPrompt, englishPrompt);
 
                 updateStatus("3/3 Lépés: Válasz magyarítása...");
@@ -556,17 +556,35 @@
                 appendMessage(`NEXUS AI (${modelUsed})`, magyarValasz);
                 updateStatus("Készenlétben");
 
-                shortTermMemory.push({ user: text, ai: magyarValasz });
+                const turnData = {
+                    timestamp: new Date().toLocaleString(),
+                    domain: document.getElementById("domain-selector").value,
+                    modelUsed: modelUsed,
+                    userText: text,
+                    userPromptEn: englishPrompt,
+                    aiResponse: magyarValasz,
+                    aiResponseEn: rawAiResponse
+                };
+
+                currentTopic.turns.push(turnData);
+                await saveTopicToDB(currentTopic);
                 updateMemoryTag();
-                await compressMemoryIfNeeded();
+                addLog("SUCCESS", "Csevegési kör elmentve az IndexedDB-be.");
 
             } catch (error) {
                 console.error(error);
                 appendMessage("Rendszer Hiba", error.message, true);
-                updateStatus("Hiba történt a feldolgozás során");
+                updateStatus("Hiba történt");
                 toggleDebugModal();
             }
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
+            document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
+            document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
+            initDB();
+        });
     </script>
 </body>
 </html>
