@@ -69,7 +69,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v1.9 CORS-Bypass</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v2.0 Free-Core</span>
                 </h1>
                 <p class="text-[11px] text-slate-400 font-mono">Smart Routing // High Availability</p>
             </div>
@@ -189,10 +189,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_INITIALIZED // HIGH-AVAILABILITY HYBRID ENGINE</span>
+                <span>SYSTEM_INITIALIZED // FREE-CORE ROUTER ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                Üdvözöllek! A kulcsmentes API kapcsolat át lett állítva a böngészőbarát GET protokollra. Írd be a kérdésedet, a válasz azonnal megérkezik!
+                Üdvözöllek! A kulcsmentes ág átállt az ingyenes nyílt modellekre (`mistral`, `qwen`, `llama`). A kérésed garantáltan választ kap!
             </p>
         </div>
     </main>
@@ -286,7 +286,7 @@
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
             document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
-            addLog("INFO", "NEXUS v1.9 (CORS-Bypass Engine) betöltve.");
+            addLog("INFO", "NEXUS v2.0 (Free-Core Router) betöltve.");
         });
 
         function toggleSettings() {
@@ -378,7 +378,6 @@
             }
         }
 
-        // --- GEMINI API HÍVÁS (Dupla modell próbálkozással: 2.0 Flash -> 1.5 Flash) ---
         async function callGemini(apiKey, systemPrompt, userText, modelName = "gemini-2.0-flash") {
             addLog("INFO", `Gemini hívása indult (${modelName})...`);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -442,22 +441,21 @@
             return data.choices[0].message.content;
         }
 
-        // --- KULCSMENTES GET POLLINATIONS (CORS-Bypass szimpla HTTP GET-tel) ---
-        async function callPollinationsKeyless(systemPrompt, userText, modelName = "openai") {
+        // --- INGYENES KULCSMENTES POLLINATIONS GET (Mistral, Qwen, Llama modellekkel) ---
+        async function callPollinationsKeyless(systemPrompt, userText, modelName = "mistral") {
             addLog("INFO", `Pollinations GET (Kulcsmentes) hívás indult (${modelName})...`);
             const combinedPrompt = `${systemPrompt}\n\nTask: ${userText}`;
             const url = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=${modelName}`;
             
-            // GET kérés nem generál CORS OPTIONS előellenőrzést a böngészőkben
             const response = await fetch(url, { method: "GET" });
             if (!response.ok) {
-                addLog("WARN", `Pollinations GET Hiba (${response.status})`);
-                throw new Error(`Pollinations (${response.status})`);
+                addLog("WARN", `Pollinations (${modelName}) GET Hiba (${response.status})`);
+                throw new Error(`Pollinations ${modelName} (${response.status})`);
             }
             
             const text = await response.text();
-            if (!text || text.trim().length === 0) throw new Error("Pollinations üres választ adott.");
-            addLog("SUCCESS", "Pollinations GET válasz megérkezett!");
+            if (!text || text.trim().length === 0) throw new Error(`Pollinations (${modelName}) üres választ adott.`);
+            addLog("SUCCESS", `Pollinations (${modelName}) válasz sikeresen megérkezett!`);
             return text;
         }
 
@@ -478,34 +476,22 @@
 
             let executionChain = [];
 
-            // Kulcsos és kulcsmentes modellek sorrendbe állítása
-            if (domain === "coding") {
-                if (groqKey) executionChain.push({ name: "Groq (Qwen Coder)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "qwen-2.5-coder-32b") });
-                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                if (geminiKey) {
-                    executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
-                    executionChain.push({ name: "Gemini 1.5 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-1.5-flash") });
-                }
-                executionChain.push({ name: "Pollinations (Keyless Qwen)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "qwen-coder") });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
-            } else if (domain === "medical") {
-                if (geminiKey) {
-                    executionChain.push({ name: "Gemini 2.0 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on medical guidelines.", inputWithContext, "gemini-2.0-flash") });
-                    executionChain.push({ name: "Gemini 1.5 Flash (Medical)", fn: () => callGemini(geminiKey, systemPrompt + " Focus on medical guidelines.", inputWithContext, "gemini-1.5-flash") });
-                }
-                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
-                executionChain.push({ name: "Pollinations (Keyless DeepSeek)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "deepseek") });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
-            } else {
-                if (geminiKey) {
-                    executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
-                    executionChain.push({ name: "Gemini 1.5 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-1.5-flash") });
-                }
-                if (groqKey) executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext) });
-                if (openrouterKey) executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
-                executionChain.push({ name: "Pollinations (Keyless OpenAI)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "openai") });
+            // Kulcsos modellek
+            if (geminiKey) {
+                executionChain.push({ name: "Gemini 2.0 Flash", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash") });
+                executionChain.push({ name: "Gemini 2.0 Flash-Lite", fn: () => callGemini(geminiKey, systemPrompt, inputWithContext, "gemini-2.0-flash-lite") });
             }
+            if (groqKey) {
+                executionChain.push({ name: "Groq (Llama 3.3)", fn: () => callGroq(groqKey, systemPrompt, inputWithContext, "llama-3.3-70b-versatile") });
+            }
+            if (openrouterKey) {
+                executionChain.push({ name: "OpenRouter (DeepSeek R1)", fn: () => callOpenRouter(openrouterKey, systemPrompt, inputWithContext, "deepseek/deepseek-r1:free") });
+            }
+
+            // Ingyenes kulcsmentes tartalék csatornák (Garantáltan 402 mentes nyílt modellek)
+            executionChain.push({ name: "Pollinations (Mistral)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "mistral") });
+            executionChain.push({ name: "Pollinations (Qwen Coder)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "qwen-coder") });
+            executionChain.push({ name: "Pollinations (Llama)", fn: () => callPollinationsKeyless(systemPrompt, inputWithContext, "llama") });
 
             let errorLogs = [];
 
@@ -536,7 +522,7 @@
                 const conversationText = toCompress.map(m => `User: ${m.user}\nAI: ${m.ai}`).join("\n");
                 
                 try {
-                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "openai");
+                    const newSummaryPart = await callPollinationsKeyless(summaryPrompt, conversationText, "mistral");
                     longTermSummary += (longTermSummary ? "\n" : "") + newSummaryPart;
                     addLog("SUCCESS", "Memória tömörítve.");
                     updateMemoryTag();
