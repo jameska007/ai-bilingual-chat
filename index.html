@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Dual-Language AI Workstation</title>
+    <title>NEXUS // Local Engine AI Workstation</title>
     
     <style>
         html, body {
@@ -32,6 +32,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Transformers.js (Local On-Device Models via WASM/ONNX) -->
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
 
     <script>
         tailwind.config = {
@@ -66,7 +69,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v3.3 Multi-Save</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v4.0 Local-NMT</span>
                 </h1>
                 <p class="text-[11px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
@@ -84,7 +87,7 @@
                 <option value="">📁 Recent témák...</option>
             </select>
 
-            <!-- MENTÉS / MEGOSZTÁS OBSIDIANBA GOMB -->
+            <!-- Mentés Obsidianba -->
             <button onclick="exportCurrentToObsidian()" class="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-purple">
                 <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                 <span>Mentés Obsidianba</span>
@@ -113,7 +116,7 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
                 <i data-lucide="database" class="w-4 h-4"></i>
-                <span>LOCAL STORAGE & EXPORT ENGINE</span>
+                <span>LOCAL STORAGE & ON-DEVICE MODEL ENGINE</span>
             </div>
             <button onclick="toggleSettings()" class="text-slate-500 hover:text-slate-300">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -174,10 +177,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_READY // MULTI-SAVE ENGINE ACTIVE</span>
+                <span>SYSTEM_READY // LOCAL TRANSFORMER TRANSLATION ACTIVE</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                A mentés gomb megnyomásakor az Android megosztási ablakán keresztül közvetlenül az **Obsidian** alkalmazásba küldheted a csevegést, vagy lementheted a fájlt.
+                A magyar–angol fordítás mostantól **kizárólag a tableten fut** (helyi ONNX / WASM modellel). Külső fordító szerverek használata megszűnt!
             </p>
         </div>
     </main>
@@ -187,6 +190,9 @@
         <div class="flex items-center gap-2">
             <span id="status-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="status-bar">Rendszer: Készenlétben</span>
+        </div>
+        <div id="local-model-status" class="text-[10px] text-cyan-400 font-mono hidden sm:block">
+            Helyi Fordító: Inaktív
         </div>
         <div id="active-model-tag" class="text-[10px] text-emerald-400 font-mono hidden sm:block">
             Téma adatrekordok: 0
@@ -212,6 +218,74 @@
         let db = null;
         let obsidianDirHandle = null;
 
+        // HELYI FORDÍTÓ MODELLEK (ONNX Pipelines)
+        let translatorHuEn = null;
+        let translatorEnHu = null;
+
+        async function initLocalTranslators() {
+            if (translatorHuEn && translatorEnHu) return;
+            
+            document.getElementById("local-model-status").innerText = "Helyi Fordító: Betöltés...";
+            addLog("INFO", "Helyi ONNX fordító modellek inicializálása a tableten...");
+            updateStatus("Helyi fordító modellek betöltése...");
+
+            try {
+                const { pipeline, env } = window.Xenova;
+                env.allowLocalModels = false;
+
+                addLog("INFO", "HU -> EN Modell letöltése / betöltése memóriába...");
+                translatorHuEn = await pipeline('translation', 'Xenova/opus-mt-hu-en', {
+                    progress_callback: (p) => {
+                        if (p.status === 'downloading') {
+                            addLog("INFO", `HU->EN letöltés: ${Math.round(p.progress || 0)}%`);
+                        }
+                    }
+                });
+
+                addLog("INFO", "EN -> HU Modell letöltése / betöltése memóriába...");
+                translatorEnHu = await pipeline('translation', 'Xenova/opus-mt-en-hu', {
+                    progress_callback: (p) => {
+                        if (p.status === 'downloading') {
+                            addLog("INFO", `EN->HU letöltés: ${Math.round(p.progress || 0)}%`);
+                        }
+                    }
+                });
+
+                document.getElementById("local-model-status").innerText = "Helyi Fordító: Aktív (Tablet)";
+                addLog("SUCCESS", "Helyi fordító modellek sikeresen betöltve a tablet memóriájába!");
+                updateStatus("Készenlétben (Helyi fordító aktív)");
+            } catch (err) {
+                addLog("ERROR", "Helyi fordító modell betöltési hiba", err.message);
+                document.getElementById("local-model-status").innerText = "Helyi Fordító: Hiba";
+                throw err;
+            }
+        }
+
+        async function translateTextLocal(text, fromLang, toLang) {
+            addLog("INFO", `Helyi Tablet-Fordítás indítása (${fromLang} -> ${toLang})...`);
+            try {
+                if (!translatorHuEn || !translatorEnHu) {
+                    await initLocalTranslators();
+                }
+
+                if (fromLang === "hu" && toLang === "en") {
+                    const output = await translatorHuEn(text);
+                    const result = output[0].translation_text;
+                    addLog("SUCCESS", "Helyi HU->EN fordítás kész.");
+                    return result;
+                } else if (fromLang === "en" && toLang === "hu") {
+                    const output = await translatorEnHu(text);
+                    const result = output[0].translation_text;
+                    addLog("SUCCESS", "Helyi EN->HU fordítás kész.");
+                    return result;
+                }
+                return text;
+            } catch (e) {
+                addLog("WARN", "Helyi fordítás sikertelen volt, az eredeti szöveg használata.", e.message);
+                return text;
+            }
+        }
+
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open("NEXUS_Workstation_DB", 1);
@@ -234,15 +308,8 @@
             });
         }
 
-        function toggleSettings() {
-            const panel = document.getElementById("settings-panel");
-            panel.classList.toggle("hidden");
-            addLog("INFO", "Beállítások panel átváltva.");
-        }
-
-        function toggleDebugModal() {
-            document.getElementById("debug-modal").classList.toggle("hidden");
-        }
+        function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
+        function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
 
         async function selectObsidianFolder() {
             try {
@@ -255,9 +322,7 @@
                     alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Használd a Mentés gombot az Android megosztáshoz!");
                 }
             } catch (err) {
-                if (err.name !== 'AbortError') {
-                    addLog("ERROR", "Mappa kijelölési hiba", err);
-                }
+                if (err.name !== 'AbortError') addLog("ERROR", "Mappa kijelölési hiba", err);
             }
         }
 
@@ -266,9 +331,7 @@
                 try {
                     const options = { mode: 'readwrite' };
                     if ((await obsidianDirHandle.queryPermission(options)) !== 'granted') {
-                        if ((await obsidianDirHandle.requestPermission(options)) !== 'granted') {
-                            return false;
-                        }
+                        if ((await obsidianDirHandle.requestPermission(options)) !== 'granted') return false;
                     }
                     const fileHandle = await obsidianDirHandle.getFileHandle(filename, { create: true });
                     const writable = await fileHandle.createWritable();
@@ -278,7 +341,7 @@
                     alert(`Sikeres mentés az Obsidian mappába:\n${filename}`);
                     return true;
                 } catch (e) {
-                    addLog("WARN", "Közvetlen írás sikertelen, váltás megosztásra / letöltésre...", e.message);
+                    addLog("WARN", "Közvetlen írás sikertelen", e.message);
                 }
             }
             return false;
@@ -295,9 +358,7 @@
                 document.body.appendChild(a);
                 a.click();
                 setTimeout(() => {
-                    if (document.body.contains(a)) {
-                        document.body.removeChild(a);
-                    }
+                    if (document.body.contains(a)) document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }, 1500);
                 addLog("SUCCESS", `Fájl letöltése elindítva: ${fileName}`);
@@ -330,7 +391,7 @@ tags:
 
         async function exportCurrentToObsidian() {
             if (!currentTopic || currentTopic.turns.length === 0) {
-                alert("Nincs kiválasztott téma vagy még nincsenek üzenetek a beszélgetésben!");
+                alert("Nincs kiválasztott téma vagy még nincsenek üzenetek!");
                 return;
             }
 
@@ -338,19 +399,13 @@ tags:
             const mdContent = generateObsidianMarkdown(currentTopic, domain);
             const fileName = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
 
-            // 1. Direkt mappa írás (ha be van állítva)
             const savedDirectly = await saveDirectToVault(fileName, mdContent);
             if (savedDirectly) return;
 
-            // 2. Android Web Share API (Megnyitja a megosztási panelt, ahonnan átküldhető az Obsidianba)
             const file = new File([mdContent], fileName, { type: "text/markdown" });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({
-                        files: [file],
-                        title: currentTopic.title,
-                        text: `NEXUS AI Export: ${currentTopic.title}`
-                    });
+                    await navigator.share({ files: [file], title: currentTopic.title, text: `NEXUS AI Export: ${currentTopic.title}` });
                     addLog("SUCCESS", "Fájl átadva az Android megosztó rendszernek.");
                     return;
                 } catch (err) {
@@ -358,7 +413,6 @@ tags:
                 }
             }
 
-            // 3. Fallback normál letöltés
             downloadFile(mdContent, fileName, "text/markdown");
         }
 
@@ -376,11 +430,7 @@ tags:
                         { role: "user", content: turn.userPromptEn || turn.userText },
                         { role: "assistant", content: turn.aiResponseEn || turn.aiResponse }
                     ],
-                    metadata: {
-                        domain: turn.domain,
-                        model_used: turn.modelUsed,
-                        timestamp: turn.timestamp
-                    }
+                    metadata: { domain: turn.domain, model_used: turn.modelUsed, timestamp: turn.timestamp }
                 };
                 jsonlLines.push(JSON.stringify(jsonObj));
             });
@@ -391,11 +441,7 @@ tags:
 
         async function exportFullDatabaseJSON() {
             const allTopics = await getAllTopicsFromDB();
-            const dump = {
-                exportDate: new Date().toISOString(),
-                databaseVersion: "3.3",
-                topics: allTopics
-            };
+            const dump = { exportDate: new Date().toISOString(), databaseVersion: "4.0", topics: allTopics };
             downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
         }
 
@@ -404,12 +450,7 @@ tags:
             if (!title || !title.trim()) return;
 
             const topicId = "topic_" + Date.now();
-            currentTopic = {
-                id: topicId,
-                title: title.trim(),
-                createdAt: new Date().toISOString(),
-                turns: []
-            };
+            currentTopic = { id: topicId, title: title.trim(), createdAt: new Date().toISOString(), turns: [] };
 
             await saveTopicToDB(currentTopic);
             await refreshRecentTopicsList();
@@ -418,11 +459,7 @@ tags:
             document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
 
             const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = `
-                <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">
-                    ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"
-                </div>
-            `;
+            chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"</div>`;
             updateMemoryTag();
             addLog("INFO", `Új téma létrehozva: ${currentTopic.title}`);
         }
@@ -521,15 +558,6 @@ tags:
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        async function translateText(text, fromLang, toLang) {
-            try {
-                const res = await fetch(`https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`);
-                if (!res.ok) return text;
-                const d = await res.json();
-                return d.translation || text;
-            } catch (e) { return text; }
-        }
-
         async function callGroq(apiKey, systemPrompt, userText) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -585,18 +613,21 @@ tags:
             input.style.height = 'auto';
 
             try {
-                updateStatus("1/3 Lépés: Előkészítés...");
-                const englishPrompt = await translateText(text, "hu", "en");
+                // 1. LÉPÉS: Helyi Tablet-Fordítás (HU -> EN)
+                updateStatus("1/3 Lépés: Helyi fordítás a tableten (HU->EN)...");
+                const englishPrompt = await translateTextLocal(text, "hu", "en");
 
+                // 2. LÉPÉS: Fő AI Modell Futtatása (Groq / Pollinations)
                 updateStatus("2/3 Lépés: AI modell válaszol...");
                 const systemPrompt = "You are an expert software developer and analytical assistant. Respond in detail.";
                 const { response: rawAiResponse, modelUsed } = await executeSmartPipeline(systemPrompt, englishPrompt);
 
-                updateStatus("3/3 Lépés: Válasz magyarítása...");
-                const magyarValasz = await translateText(rawAiResponse, "en", "hu");
+                // 3. LÉPÉS: Helyi Tablet-Fordítás (EN -> HU)
+                updateStatus("3/3 Lépés: Helyi fordítás a tableten (EN->HU)...");
+                const magyarValasz = await translateTextLocal(rawAiResponse, "en", "hu");
 
                 appendMessage(`NEXUS AI (${modelUsed})`, magyarValasz);
-                updateStatus("Készenlétben");
+                updateStatus("Készenlétben (Helyi fordító aktív)");
 
                 const turnData = {
                     timestamp: new Date().toLocaleString(),
