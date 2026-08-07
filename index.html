@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Instant-UI v4.8</title>
+    <title>NEXUS // Style-Fix v4.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
@@ -11,6 +11,16 @@
         html, body { background-color: #090d16 !important; color: #f1f5f9 !important; height: 100%; }
         .hidden { display: none !important; }
         .bg-grid { background-size: 30px 30px; background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); }
+        
+        /* Android Chrome Beviteli Mező Fix */
+        textarea, input {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            caret-color: #10b981 !important;
+        }
+        textarea::placeholder, input::placeholder {
+            color: #64748b !important;
+        }
     </style>
 </head>
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased">
@@ -22,7 +32,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v4.8 Instant-UI</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v4.9 Style-Fix</h1>
                 <p class="text-[10px] text-slate-400" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -39,9 +49,9 @@
     <!-- Beállítások Panel -->
     <div id="settings-panel" class="hidden bg-cyber-900 p-4 space-y-3 border-b border-slate-800">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="bg-cyber-950 text-slate-100 border border-slate-800 rounded p-2 text-xs">
-            <input type="password" id="groq-key" placeholder="Groq API Key" class="bg-cyber-950 text-slate-100 border border-slate-800 rounded p-2 text-xs">
-            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" class="bg-cyber-950 text-slate-100 border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="groq-key" placeholder="Groq API Key" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" class="border border-slate-800 rounded p-2 text-xs">
         </div>
         <div class="flex flex-wrap gap-2 pt-2">
             <button onclick="initLocalTranslators()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs p-2 rounded font-mono">
@@ -71,7 +81,7 @@
 
     <!-- Footer -->
     <footer class="p-4 bg-cyber-900/90 border-t border-slate-800">
-        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." class="w-full bg-cyber-950 text-slate-100 placeholder-slate-400 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500"></textarea>
+        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500"></textarea>
         <button onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all">Küldés</button>
     </footer>
 
@@ -172,17 +182,14 @@
                 if (!currentTopic) return;
             }
 
-            // 1. A beviteli mező azonnali kiürítése és a magyar üzenet AZONNALI megjelenítése
             input.value = "";
             const msgId = "user_msg_" + Date.now();
             appendMessage("Felhasználó", text, null, msgId);
 
             try {
-                // 2. Kérés fordítása angolra
                 const enPrompt = await translateText(text, "hu", "en");
                 updateMessageEnPrompt(msgId, enPrompt);
 
-                // 3. Válasz generálása az angol prompt alapján
                 const groqKey = localStorage.getItem("GROQ_KEY");
                 let aiResponseEn = "";
                 let modelUsed = "";
@@ -204,7 +211,6 @@
                     modelUsed = "Pollinations (Keyless)";
                 }
 
-                // 4. Válasz fordítása magyarra
                 const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
                 appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
                 
