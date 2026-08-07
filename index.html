@@ -69,25 +69,22 @@
             </div>
             <div>
                 <h1 class="text-sm font-bold tracking-wider font-mono text-slate-100 uppercase flex items-center gap-2">
-                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v4.0 Local-NMT</span>
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-sans font-medium">v4.2 Visible-Prompt</span>
                 </h1>
                 <p class="text-[11px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-            <!-- Új téma indítása -->
             <button onclick="createNewTopicPrompt()" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-emerald">
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
                 <span>Új téma</span>
             </button>
 
-            <!-- Recent Témák Választó -->
             <select id="recent-topics-select" onchange="switchTopic(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 font-mono focus:outline-none focus:border-emerald-500 max-w-[140px] truncate">
                 <option value="">📁 Recent témák...</option>
             </select>
 
-            <!-- Mentés Obsidianba -->
             <button onclick="exportCurrentToObsidian()" class="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all glow-purple">
                 <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                 <span>Mentés Obsidianba</span>
@@ -177,10 +174,10 @@
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 border-b border-slate-800 pb-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
-                <span>SYSTEM_READY // LOCAL TRANSFORMER TRANSLATION ACTIVE</span>
+                <span>SYSTEM_READY // VISIBLE EN-PROMPT DISPLAY</span>
             </div>
             <p class="text-sm text-slate-300 leading-relaxed">
-                A magyar–angol fordítás mostantól **kizárólag a tableten fut** (helyi ONNX / WASM modellel). Külső fordító szerverek használata megszűnt!
+                Írd be a kérdésed! A magyar szöveg alatt azonnal megjelenik a generált **angol AI prompt**.
             </p>
         </div>
     </main>
@@ -202,7 +199,7 @@
     <!-- Beviteli mező -->
     <footer class="bg-cyber-900/90 border-t border-slate-800/80 p-3 md:p-4 backdrop-blur-md">
         <div class="max-w-4xl mx-auto flex items-end gap-2 bg-cyber-950 border border-slate-800 rounded-xl p-2 focus-within:border-emerald-500/70 transition-all">
-            <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
+            <textarea id="user-input" rows="1" placeholder="Írd ide a kérdésed magyarul..." class="flex-1 bg-transparent text-slate-100 placeholder-slate-400 p-2 text-sm focus:outline-none resize-none font-sans max-h-32"></textarea>
             <button onclick="handleSend()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-lg transition-all flex items-center justify-center glow-emerald shrink-0">
                 <i data-lucide="send" class="w-4 h-4"></i>
             </button>
@@ -218,7 +215,6 @@
         let db = null;
         let obsidianDirHandle = null;
 
-        // HELYI FORDÍTÓ MODELLEK (ONNX Pipelines)
         let translatorHuEn = null;
         let translatorEnHu = null;
 
@@ -226,64 +222,57 @@
             if (translatorHuEn && translatorEnHu) return;
             
             document.getElementById("local-model-status").innerText = "Helyi Fordító: Betöltés...";
-            addLog("INFO", "Helyi ONNX fordító modellek inicializálása a tableten...");
+            addLog("INFO", "Helyi ONNX fordító modellek inicializálása...");
             updateStatus("Helyi fordító modellek betöltése...");
 
             try {
                 const { pipeline, env } = window.Xenova;
                 env.allowLocalModels = false;
 
-                addLog("INFO", "HU -> EN Modell letöltése / betöltése memóriába...");
-                translatorHuEn = await pipeline('translation', 'Xenova/opus-mt-hu-en', {
-                    progress_callback: (p) => {
-                        if (p.status === 'downloading') {
-                            addLog("INFO", `HU->EN letöltés: ${Math.round(p.progress || 0)}%`);
-                        }
-                    }
-                });
-
-                addLog("INFO", "EN -> HU Modell letöltése / betöltése memóriába...");
-                translatorEnHu = await pipeline('translation', 'Xenova/opus-mt-en-hu', {
-                    progress_callback: (p) => {
-                        if (p.status === 'downloading') {
-                            addLog("INFO", `EN->HU letöltés: ${Math.round(p.progress || 0)}%`);
-                        }
-                    }
-                });
+                translatorHuEn = await pipeline('translation', 'Xenova/opus-mt-hu-en');
+                translatorEnHu = await pipeline('translation', 'Xenova/opus-mt-en-hu');
 
                 document.getElementById("local-model-status").innerText = "Helyi Fordító: Aktív (Tablet)";
-                addLog("SUCCESS", "Helyi fordító modellek sikeresen betöltve a tablet memóriájába!");
+                addLog("SUCCESS", "Helyi fordító modellek betöltve!");
                 updateStatus("Készenlétben (Helyi fordító aktív)");
             } catch (err) {
-                addLog("ERROR", "Helyi fordító modell betöltési hiba", err.message);
-                document.getElementById("local-model-status").innerText = "Helyi Fordító: Hiba";
-                throw err;
+                addLog("WARN", "Helyi fordító betöltési hiba, tartalék fordító aktív.", err.message);
+                document.getElementById("local-model-status").innerText = "Helyi Fordító: Fallback";
             }
         }
 
         async function translateTextLocal(text, fromLang, toLang) {
-            addLog("INFO", `Helyi Tablet-Fordítás indítása (${fromLang} -> ${toLang})...`);
+            addLog("INFO", `Fordítás (${fromLang} -> ${toLang})...`);
             try {
                 if (!translatorHuEn || !translatorEnHu) {
                     await initLocalTranslators();
                 }
 
-                if (fromLang === "hu" && toLang === "en") {
+                if (fromLang === "hu" && toLang === "en" && translatorHuEn) {
                     const output = await translatorHuEn(text);
-                    const result = output[0].translation_text;
-                    addLog("SUCCESS", "Helyi HU->EN fordítás kész.");
-                    return result;
-                } else if (fromLang === "en" && toLang === "hu") {
+                    const res = output[0]?.translation_text || text;
+                    addLog("SUCCESS", "HU->EN Fordítás kész.");
+                    return res;
+                } else if (fromLang === "en" && toLang === "hu" && translatorEnHu) {
                     const output = await translatorEnHu(text);
-                    const result = output[0].translation_text;
-                    addLog("SUCCESS", "Helyi EN->HU fordítás kész.");
-                    return result;
+                    const res = output[0]?.translation_text || text;
+                    addLog("SUCCESS", "EN->HU Fordítás kész.");
+                    return res;
                 }
-                return text;
             } catch (e) {
-                addLog("WARN", "Helyi fordítás sikertelen volt, az eredeti szöveg használata.", e.message);
-                return text;
+                addLog("WARN", "Helyi modell hiba, váltás tartalék fordítóra...", e.message);
             }
+
+            // Fallback Online Translator (Lingva API)
+            try {
+                const res = await fetch(`https://lingva.ml/api/v1/${fromLang}/${toLang}/${encodeURIComponent(text)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.translation) return data.translation;
+                }
+            } catch (err) {}
+
+            return text;
         }
 
         function initDB() {
@@ -319,7 +308,7 @@
                     addLog("SUCCESS", `Direct Vault Mappa beállítva: ${obsidianDirHandle.name}`);
                     alert(`Közvetlen mentés aktív ehhez a mappához: ${obsidianDirHandle.name}`);
                 } else {
-                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást. Használd a Mentés gombot az Android megosztáshoz!");
+                    alert("Ez a böngésző nem támogatja a közvetlen mappa-írást.");
                 }
             } catch (err) {
                 if (err.name !== 'AbortError') addLog("ERROR", "Mappa kijelölési hiba", err);
@@ -384,7 +373,7 @@ tags:
 
 `;
             topic.turns.forEach((turn) => {
-                mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> ${turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
+                mdContent += `### 👤 Felhasználó [${turn.timestamp}]\n> HU: ${turn.userText}\n> EN: ${turn.userPromptEn || turn.userText}\n\n---\n\n### 🤖 NEXUS AI (${turn.modelUsed}) [${turn.timestamp}]\n${turn.aiResponse}\n\n---\n\n`;
             });
             return mdContent;
         }
@@ -441,7 +430,7 @@ tags:
 
         async function exportFullDatabaseJSON() {
             const allTopics = await getAllTopicsFromDB();
-            const dump = { exportDate: new Date().toISOString(), databaseVersion: "4.0", topics: allTopics };
+            const dump = { exportDate: new Date().toISOString(), databaseVersion: "4.2", topics: allTopics };
             downloadFile(JSON.stringify(dump, null, 2), `NEXUS_Full_DB_Backup_${Date.now()}.json`, "application/json");
         }
 
@@ -513,7 +502,7 @@ tags:
             chatBox.innerHTML = "";
 
             currentTopic.turns.forEach(turn => {
-                appendMessage("Felhasználó", turn.userText);
+                appendMessage("Felhasználó", turn.userText, false, turn.userPromptEn);
                 appendMessage(`NEXUS AI (${turn.modelUsed})`, turn.aiResponse);
             });
 
@@ -545,14 +534,29 @@ tags:
             tag.innerText = `Téma adatrekordok: ${count}`;
         }
 
-        function appendMessage(sender, text, isError = false) {
+        function appendMessage(sender, text, isError = false, enText = null) {
             const chatBox = document.getElementById("chat-box");
             const isUser = sender === "Felhasználó";
             const msgWrapper = document.createElement("div");
             msgWrapper.className = `flex ${isUser ? "justify-end" : "justify-start"} max-w-3xl mx-auto w-full`;
             const msgDiv = document.createElement("div");
+            
             msgDiv.className = `p-4 rounded-2xl text-sm leading-relaxed max-w-[85%] border shadow-lg ${isUser ? "bg-gradient-to-br from-emerald-950/80 to-slate-900 border-emerald-600/40 text-emerald-50 text-right rounded-tr-none" : isError ? "bg-red-950/50 border-red-800/60 text-red-200 rounded-tl-none" : "bg-cyber-900/90 border-slate-800 text-slate-200 rounded-tl-none"}`;
-            msgDiv.innerHTML = `<div class="flex items-center gap-2 mb-1 text-[11px] font-mono text-slate-400 ${isUser ? "justify-end text-emerald-400" : ""}"><span>${sender}</span></div><div class="whitespace-pre-wrap ${isUser ? "text-left" : ""}">${text}</div>`;
+            
+            let html = `<div class="flex items-center gap-2 mb-1 text-[11px] font-mono text-slate-400 ${isUser ? "justify-end text-emerald-400" : ""}"><span>${sender}</span></div><div class="whitespace-pre-wrap ${isUser ? "text-left" : ""}">${text}</div>`;
+            
+            if (isUser && enText) {
+                html += `
+                    <div class="mt-3 pt-2.5 border-t border-emerald-800/60 text-xs font-mono text-emerald-300 text-left bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/30">
+                        <span class="text-emerald-400 font-semibold flex items-center gap-1 mb-0.5">
+                            🇬🇧 Angol fordítás (AI Prompt):
+                        </span>
+                        ${enText}
+                    </div>
+                `;
+            }
+
+            msgDiv.innerHTML = html;
             msgWrapper.appendChild(msgDiv);
             chatBox.appendChild(msgWrapper);
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -608,22 +612,24 @@ tags:
                 if (!currentTopic) return;
             }
 
-            appendMessage("Felhasználó", text);
             input.value = "";
             input.style.height = 'auto';
 
             try {
-                // 1. LÉPÉS: Helyi Tablet-Fordítás (HU -> EN)
-                updateStatus("1/3 Lépés: Helyi fordítás a tableten (HU->EN)...");
+                // 1. LÉPÉS: Fordítás Angolra
+                updateStatus("1/3 Lépés: Kérés fordítása angolra...");
                 const englishPrompt = await translateTextLocal(text, "hu", "en");
 
-                // 2. LÉPÉS: Fő AI Modell Futtatása (Groq / Pollinations)
+                // 2. LÉPÉS: Felhasználói Üzenet Kiírása a Képernyőre (Azonnal a megjelent angol fordítással!)
+                appendMessage("Felhasználó", text, false, englishPrompt);
+
+                // 3. LÉPÉS: Fő AI Modell Futtatása (Groq / Pollinations)
                 updateStatus("2/3 Lépés: AI modell válaszol...");
                 const systemPrompt = "You are an expert software developer and analytical assistant. Respond in detail.";
                 const { response: rawAiResponse, modelUsed } = await executeSmartPipeline(systemPrompt, englishPrompt);
 
-                // 3. LÉPÉS: Helyi Tablet-Fordítás (EN -> HU)
-                updateStatus("3/3 Lépés: Helyi fordítás a tableten (EN->HU)...");
+                // 4. LÉPÉS: Válasz Magyarítása
+                updateStatus("3/3 Lépés: Válasz fordítása magyarra...");
                 const magyarValasz = await translateTextLocal(rawAiResponse, "en", "hu");
 
                 appendMessage(`NEXUS AI (${modelUsed})`, magyarValasz);
