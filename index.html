@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Rest-Fix v9.1</title>
+    <title>NEXUS // Edge-Fix v9.2</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -56,7 +56,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono text-slate-100 uppercase">NEXUS v9.1 Rest-Fix</h1>
+                <h1 class="text-sm font-bold font-mono text-slate-100 uppercase">NEXUS v9.2 Edge-Fix</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -123,7 +123,7 @@
     <!-- Chat Box -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v9.1: DuckDuckGo AI, AI Horde és Plugsky Edge nyílt REST API-k beépítve. Témák törlése engedélyezve!
+            NEXUS v9.2: Groq, Puter AI és AI Horde csatornák zölden üzemelnek. Témák törlése aktív!
         </div>
     </main>
 
@@ -290,50 +290,7 @@
             return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
         }
 
-        // 1.A) DUCKDUCKGO PUBLIC AI REST
-        async function callDuckDuckGoAPI(messages) {
-            let lastMessage = messages[messages.length - 1];
-            let promptText = lastMessage ? lastMessage.content : "Hello";
-
-            const statusRes = await fetch("https://duckduckgo.com/duckchat/v1/status", {
-                headers: { "x-vsh": "1" }
-            });
-            if (!statusRes.ok) throw new Error("DDG_STATUS_FAILED");
-            const vqdToken = statusRes.headers.get("x-vqd-4");
-
-            const chatRes = await fetch("https://duckduckgo.com/duckchat/v1/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-vqd-4": vqdToken || ""
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [{ role: "user", content: promptText }]
-                })
-            });
-
-            if (!chatRes.ok) throw new Error(`DDG_HTTP_${chatRes.status}`);
-            const text = await chatRes.text();
-            
-            let fullText = "";
-            const lines = text.split("\n");
-            for (let line of lines) {
-                if (line.startsWith("data: ")) {
-                    const jsonStr = line.replace("data: ", "").trim();
-                    if (jsonStr !== "[DONE]") {
-                        try {
-                            const parsed = JSON.parse(jsonStr);
-                            if (parsed.message) fullText += parsed.message;
-                        } catch(e) {}
-                    }
-                }
-            }
-            if (!fullText) throw new Error("DDG_EMPTY_RESPONSE");
-            return fullText;
-        }
-
-        // 1.B) AI HORDE PUBLIC ANONYMOUS
+        // AI HORDE PUBLIC ANONYMOUS CSATORNA
         async function callAIHordeAPI(messages) {
             let lastMessage = messages[messages.length - 1];
             let promptText = lastMessage ? lastMessage.content : "Hello";
@@ -343,7 +300,7 @@
                 headers: {
                     "Content-Type": "application/json",
                     "apikey": "0000000000",
-                    "Client-Agent": "NEXUS_Workstation:v9.1:anonymous"
+                    "Client-Agent": "NEXUS_Workstation:v9.2:anonymous"
                 },
                 body: JSON.stringify({
                     prompt: promptText,
@@ -366,20 +323,6 @@
                 }
             }
             throw new Error("AI_HORDE_TIMEOUT");
-        }
-
-        // 1.C) PLUGSKY / EDGE PUBLIC GATEWAY
-        async function callPlugskyEdgeAPI(messages) {
-            let lastMessage = messages[messages.length - 1];
-            let promptText = lastMessage ? lastMessage.content : "Hello";
-
-            const res = await fetch("https://text.pollinations.ai/" + encodeURIComponent(promptText.substring(0, 300)));
-            if (!res.ok) throw new Error(`EDGE_HTTP_${res.status}`);
-            const text = await res.text();
-            if (!text || text.includes("404 Not Found") || text.includes("Cannot GET")) {
-                throw new Error("EDGE_EMPTY_RESPONSE");
-            }
-            return text;
         }
 
         async function callGeminiAPI(apiKey, messages) {
@@ -443,7 +386,6 @@
             const testMessages = [{ role: "user", content: "Reply with 'OK'" }];
             const groqKey = localStorage.getItem("GROQ_KEY");
             const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
             let resultsHtml = "";
 
@@ -469,17 +411,8 @@
                 resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
             }
 
-            // 3. DuckDuckGo AI Gateway
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. DuckDuckGo AI (Free Keyless REST):</strong> `;
-            try {
-                await callDuckDuckGoAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-amber-400">⚠ Inaktív: ${e.message}</span></div>`;
-            }
-
-            // 4. AI Horde
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. AI Horde (Free Keyless Anonymous):</strong> `;
+            // 3. AI Horde
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Anonymous):</strong> `;
             try {
                 await callAIHordeAPI(testMessages);
                 resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
@@ -487,17 +420,8 @@
                 resultsHtml += `<span class="text-amber-400">⚠ Inaktív/Lassú: ${e.message}</span></div>`;
             }
 
-            // 5. Plugsky Edge
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. Plugsky Edge (Free Keyless Gateway):</strong> `;
-            try {
-                await callPlugskyEdgeAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-amber-400">⚠ Inaktív: ${e.message}</span></div>`;
-            }
-
-            // 6. Gemini
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>6. Gemini (Flash):</strong> `;
+            // 4. Gemini
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Gemini (Flash):</strong> `;
             if (!geminiKey) {
                 resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
             } else {
@@ -533,25 +457,13 @@
                 return { responseEn, modelUsed: "Puter AI (Free Keyless)" };
             } catch (err) {}
 
-            // TIER 3: DuckDuckGo AI (Kulcsmentes)
-            try {
-                const responseEn = await callDuckDuckGoAPI(messages);
-                return { responseEn, modelUsed: "DuckDuckGo AI (Free Keyless)" };
-            } catch (err) {}
-
-            // TIER 4: AI Horde (Anonim Kulcsmentes)
+            // TIER 3: AI Horde (Anonim Kulcsmentes)
             try {
                 const responseEn = await callAIHordeAPI(messages);
                 return { responseEn, modelUsed: "AI Horde (Free Keyless)" };
             } catch (err) {}
 
-            // TIER 5: Plugsky Edge Gateway (Kulcsmentes)
-            try {
-                const responseEn = await callPlugskyEdgeAPI(messages);
-                return { responseEn, modelUsed: "Plugsky Edge (Free Keyless)" };
-            } catch (err) {}
-
-            // TIER 6: Gemini API
+            // TIER 4: Gemini API
             if (geminiKey) {
                 try {
                     const responseEn = await callGeminiAPI(geminiKey, messages);
@@ -559,7 +471,7 @@
                 } catch (err) {}
             }
 
-            // TIER 7: OpenRouter Free
+            // TIER 5: OpenRouter Free
             if (openrouterKey) {
                 try {
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
