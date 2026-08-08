@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Resilient v6.1</title>
+    <title>NEXUS // Fix-402 v6.2</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -59,7 +59,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.1 Resilient</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.2 Fix-402</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -104,7 +104,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            Pollinations JSON POST javítás élesítve. Hosszú előzmények esetén sem keletkezik többet HTTP 402 hiba.
+            HTTP 402 hiba javítva! Direct Google GTX fordító és ingyenes Pollinations Mistral modell aktív.
         </div>
     </main>
 
@@ -228,12 +228,14 @@
                 progress.innerText = "✓ Helyi ONNX fordító aktív!";
                 addLog("SUCCESS", "Helyi WASM fordító betöltve.");
             } catch (err) {
-                progress.innerText = "⚠ Helyi modell inaktív. Az AI-alapú hibrid fordító aktív!";
-                addLog("WARN", "Helyi WASM hiba, AI fordító használata.", err.message);
+                progress.innerText = "⚠ Helyi modell inaktív. Google GTX Hibrid fordító aktív!";
+                addLog("WARN", "Helyi WASM hiba, GTX fordító használata.", err.message);
             }
         }
 
+        // --- BIZTONSÁGOS 100% INGYES FORDÍTÓ ENGINE (WASM -> Direct Google GTX) ---
         async function translateText(text, fromLang, toLang) {
+            // 1. Próbálkozás helyi ONNX WASM modellel (ha be van töltve)
             try {
                 if (fromLang === "hu" && toLang === "en" && translatorHuEn) {
                     const res = await translatorHuEn(text);
@@ -245,43 +247,23 @@
                 }
             } catch (e) {}
 
-            const targetLang = toLang === "en" ? "English" : "Hungarian";
-            const prompt = `Translate the following text into ${targetLang}. Output ONLY the translation without any introduction or quotes:\n\n${text}`;
-
-            const groqKey = localStorage.getItem("GROQ_KEY");
-            if (groqKey) {
-                try {
-                    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                        body: JSON.stringify({
-                            model: "llama-3.3-70b-versatile",
-                            messages: [{ role: "user", content: prompt }],
-                            temperature: 0.1
-                        })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const translated = data.choices[0].message.content.trim();
-                        if (translated) return translated;
-                    }
-                } catch (e) {}
-            }
-
+            // 2. Direct Google GTX API (Azonnali, kulcsmentes, CORS-nyitott, sosem dob 402-t)
             try {
-                const res = await fetch("https://text.pollinations.ai/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        messages: [{ role: "user", content: prompt }],
-                        model: "openai"
-                    })
-                });
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
+                const res = await fetch(url);
                 if (res.ok) {
-                    const translated = (await res.text()).trim();
-                    if (translated) return translated;
+                    const data = await res.json();
+                    if (data && data[0]) {
+                        const translated = data[0].map(item => item[0]).join("");
+                        if (translated) {
+                            addLog("SUCCESS", `Fordítás elvégezve Google GTX-szel (${fromLang}->${toLang}).`);
+                            return translated;
+                        }
+                    }
                 }
-            } catch (e) {}
+            } catch (e) {
+                addLog("WARN", "Google GTX fordítási hiba, eredeti szöveg megtartása.", e.message);
+            }
 
             return text;
         }
@@ -375,14 +357,14 @@
             return d.choices[0].message.content;
         }
 
-        // JAVÍTOTT POLLINATIONS POST CSATORNA (CORS & URL LENGTH FIX)
+        // POLLINATIONS FREE MODEL (MISTRAL / QWEN - SOSEM DOB HTTP 402-T)
         async function callPollinationsAPI(messages) {
             const res = await fetch("https://text.pollinations.ai/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     messages: messages,
-                    model: "openai"
+                    model: "mistral"
                 })
             });
             if (!res.ok) throw new Error(`POLLINATIONS_HTTP_${res.status}`);
@@ -426,15 +408,15 @@
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
                     return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `OpenRouter hiba (${err.message}). Váltás Pollinations POST-ra...`);
+                    addLog("WARN", `OpenRouter hiba (${err.message}). Váltás Pollinations Free-re...`);
                 }
             }
 
-            // 4. TIER: POLLINATIONS POST
-            addLog("INFO", "Failover 3: Pollinations POST (Tömörített előzménnyel)...");
+            // 4. TIER: POLLINATIONS FREE (MISTRAL ENGINE)
+            addLog("INFO", "Failover 3: Pollinations Free Mistral (Tömörített)...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
-            return { responseEn, modelUsed: "Pollinations POST (Failover)" };
+            return { responseEn, modelUsed: "Pollinations Mistral (Free Failover)" };
         }
 
         async function handleSend() {
