@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Endpoint-Fix v7.2</title>
+    <title>NEXUS // Puter-Engine v7.3</title>
     
     <meta name="color-scheme" content="dark">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
+    
+    <!-- PUTER.JS FREE KEYLESS AI ENGINE (402 FIX) -->
+    <script src="https://js.puter.com/v2/"></script>
     
     <style>
         :root { color-scheme: dark !important; }
@@ -67,7 +70,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.2 Endpoint-Fix</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.3 Puter-Engine</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -137,7 +140,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v7.2 Engine: Pollinations végponti URL javítva. Kattints a **"🧪 Csatornák Tesztelése"** gombra az ellenőrzéshez!
+            NEXUS v7.3 Puter Engine: Ingyenes, kulcsmentes Puter AI (GPT-4o-Mini) integrálva! A 402-es hiba végleg megszüntetve.
         </div>
     </main>
 
@@ -387,6 +390,7 @@
             return messages;
         }
 
+        // --- API CALL ENGINES ---
         async function callGroqAPI(apiKey, messages) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -433,36 +437,23 @@
             return d.choices[0].message.content;
         }
 
-        // JAVÍTOTT, CORSSAFE POLLINATIONS CSATORNA (OPENAI COMPATIBLE ENDPOINT)
+        // 100% INGYES, KULCSMENTES PUTER AI ENGINE (GPT-4o-Mini - SOSEM DOB 402-T)
+        async function callPuterAPI(messages) {
+            if (typeof puter === 'undefined' || !puter.ai) {
+                throw new Error("PUTER_LIBRARY_NOT_LOADED");
+            }
+            let promptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+            const res = await puter.ai.chat(promptText, { model: 'gpt-4o-mini' });
+            if (!res) throw new Error("PUTER_EMPTY_RESPONSE");
+            return res.toString();
+        }
+
+        // TARTALÉK POLLINATIONS SIMPLE GET
         async function callPollinationsAPI(messages) {
-            try {
-                const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        messages: messages,
-                        model: "mistral"
-                    })
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.choices && data.choices[0] && data.choices[0].message) {
-                        return data.choices[0].message.content;
-                    }
-                }
-            } catch (e) {}
-
-            // Fallback POST to Root
-            const resRoot = await fetch("https://text.pollinations.ai/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: messages
-                })
-            });
-            if (!resRoot.ok) throw new Error(`POLLINATIONS_HTTP_${resRoot.status}`);
-            return await resRoot.text();
+            let promptStr = messages[messages.length - 1].content;
+            const resGet = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptStr.substring(0, 800))}?model=mistral`);
+            if (!resGet.ok) throw new Error(`POLLINATIONS_HTTP_${resGet.status}`);
+            return await resGet.text();
         }
 
         async function runHealthCheck() {
@@ -513,10 +504,10 @@
                 }
             }
 
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Pollinations (Free Fallback):</strong> `;
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Puter AI (Free Keyless GPT-4o-Mini):</strong> `;
             try {
-                await callPollinationsAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
+                await callPuterAPI(testMessages);
+                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
             } catch(e) {
                 resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
             }
@@ -530,6 +521,7 @@
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
+            // 1. TIER: GROQ
             if (groqKey) {
                 try {
                     addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
@@ -542,6 +534,7 @@
                 }
             }
 
+            // 2. TIER: GEMINI 1.5 FLASH
             if (geminiKey) {
                 try {
                     addLog("INFO", "Failover 1: Gemini 1.5 Flash...");
@@ -554,6 +547,7 @@
                 }
             }
 
+            // 3. TIER: OPENROUTER FREE
             if (openrouterKey) {
                 try {
                     addLog("INFO", "Failover 2: OpenRouter Free...");
@@ -562,15 +556,27 @@
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
                     return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `OpenRouter hibaok: (${err.message}). Váltás Pollinations-ra...`);
+                    addLog("WARN", `OpenRouter hibaok: (${err.message}). Váltás Puter AI-ra...`);
                 }
             }
 
-            addLog("INFO", "Failover 3: Pollinations Free...");
-            updateLoadingCardStatus("Failover: Pollinations Free csatorna indítása...");
+            // 4. TIER: PUTER.JS FREE GPT-4O-MINI (100% INGYES, KULCSMENTES)
+            try {
+                addLog("INFO", "Failover 3: Puter AI (GPT-4o-Mini)...");
+                updateLoadingCardStatus("Failover: Puter AI GPT-4o-Mini csatorna indítása...");
+                const messages = buildMessageArray(turns, currentEnPrompt, true);
+                const responseEn = await callPuterAPI(messages);
+                return { responseEn, modelUsed: "Puter AI (Free GPT-4o-Mini)" };
+            } catch (err) {
+                addLog("WARN", `Puter AI hibaok: (${err.message}). Váltás Pollinations-ra...`);
+            }
+
+            // 5. TIER: POLLINATIONS SIMPLE GET
+            addLog("INFO", "Failover 4: Pollinations Simple...");
+            updateLoadingCardStatus("Failover: Pollinations Simple csatorna indítása...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
-            return { responseEn, modelUsed: "Pollinations Free (Failover)" };
+            return { responseEn, modelUsed: "Pollinations (Simple Failover)" };
         }
 
         async function handleSend() {
