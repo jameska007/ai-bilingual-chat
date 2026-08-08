@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // OpenRouter-Fix v8.1</title>
+    <title>NEXUS // Keyless-Engine v8.2</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -70,7 +70,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v8.1 OpenRouter-Fix</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v8.2 Keyless-Engine</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -181,7 +181,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v8.1 Engine: Bővített OpenRouter ingyenes modell-lánc élesítve.
+            NEXUS v8.2 Keyless-Engine: Puter AI Multi-Model Rotátor és AI Horde Anonim Hálózat aktív!
         </div>
     </main>
 
@@ -494,11 +494,8 @@
             return data.candidates[0].content.parts[0].text;
         }
 
-        // BŐVÍTETT OPENROUTER INGYES MODELL ROTÁTOR (RÉSZLETES HIBAJELENTÉSSEL)
         async function callOpenRouterAPI(apiKey, messages) {
-            if (!apiKey || !apiKey.trim()) {
-                throw new Error("OPENROUTER_MISSING_KEY");
-            }
+            if (!apiKey || !apiKey.trim()) throw new Error("OPENROUTER_MISSING_KEY");
 
             const freeModels = [
                 "google/gemini-2.0-flash-lite-001:free",
@@ -543,14 +540,63 @@
             throw new Error(`OPENROUTER_FAILED (${lastErrCode || "ALL_MODELS_BUSY"})`);
         }
 
+        // PUTER AI MULTI-MODEL ROTATOR (GPT-4o-Mini + DeepSeek)
         async function callPuterAPI(messages) {
             if (typeof puter === 'undefined' || !puter.ai) {
                 throw new Error("PUTER_NOT_LOADED");
             }
             let promptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-            const res = await puter.ai.chat(promptText);
-            if (!res) throw new Error("PUTER_EMPTY");
-            return typeof res === 'string' ? res : (res.message?.content || res.toString());
+            
+            const puterModels = ['gpt-4o-mini', 'deepseek-chat'];
+            for (let modelName of puterModels) {
+                try {
+                    const res = await puter.ai.chat(promptText, { model: modelName });
+                    if (res) {
+                        return typeof res === 'string' ? res : (res.message?.content || res.toString());
+                    }
+                } catch(e) {}
+            }
+            
+            // Default fallback
+            const resDef = await puter.ai.chat(promptText);
+            if (!resDef) throw new Error("PUTER_EMPTY");
+            return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
+        }
+
+        // KULCSMENTES AI HORDE (ANONIM CSATORNA: 0000000000)
+        async function callAIHordeAPI(messages) {
+            let lastMessage = messages[messages.length - 1];
+            let promptText = lastMessage ? lastMessage.content : "Hello";
+
+            const res = await fetch("https://stablehorde.net/api/v2/generate/text/async", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": "0000000000",
+                    "Client-Agent": "NEXUS_Workstation:v8.2:anonymous"
+                },
+                body: JSON.stringify({
+                    prompt: promptText,
+                    params: { max_context_length: 1024, max_length: 300 }
+                })
+            });
+
+            if (!res.ok) throw new Error(`AI_HORDE_HTTP_${res.status}`);
+            const data = await res.json();
+            if (!data.id) throw new Error("AI_HORDE_NO_ID");
+
+            // Várakozás az anonim feldolgozásra (max 3 másodperc)
+            for (let i = 0; i < 6; i++) {
+                await new Promise(r => setTimeout(r, 500));
+                const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/text/status/${data.id}`);
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json();
+                    if (checkData.done && checkData.generations && checkData.generations[0]) {
+                        return checkData.generations[0].text;
+                    }
+                }
+            }
+            throw new Error("AI_HORDE_TIMEOUT");
         }
 
         async function callPollinationsAPI(messages) {
@@ -606,7 +652,7 @@
             }
 
             // 2. Puter AI
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless GPT-4o-Mini):</strong> `;
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless Rotator):</strong> `;
             try {
                 await callPuterAPI(testMessages);
                 resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
@@ -614,8 +660,17 @@
                 resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
             }
 
-            // 3. Gemini
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. Gemini (Flash):</strong> `;
+            // 3. AI Horde (Keyless Anonymous)
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Public):</strong> `;
+            try {
+                await callAIHordeAPI(testMessages);
+                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
+            } catch(e) {
+                resultsHtml += `<span class="text-amber-400">⚠ Inaktív/Lassú: ${e.message}</span></div>`;
+            }
+
+            // 4. Gemini
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Gemini (Flash):</strong> `;
             if (!geminiKey) {
                 resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
             } else {
@@ -627,8 +682,8 @@
                 }
             }
 
-            // 4. OpenRouter
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. OpenRouter (Free Chain):</strong> `;
+            // 5. OpenRouter
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. OpenRouter (Free Chain):</strong> `;
             if (!openrouterKey) {
                 resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
             } else {
@@ -640,8 +695,8 @@
                 }
             }
 
-            // 5. Pollinations
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. Pollinations (Clean GET Fallback):</strong> `;
+            // 6. Pollinations
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>6. Pollinations (Clean GET Fallback):</strong> `;
             try {
                 await callPollinationsAPI(testMessages);
                 resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
@@ -658,6 +713,7 @@
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
+            // 1. TIER: GROQ
             if (groqKey) {
                 try {
                     addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
@@ -670,19 +726,32 @@
                 }
             }
 
+            // 2. TIER: PUTER AI (ELSŐDLEGES MŰKÖDŐ KULCSMENTES INGYES CSATORNA)
             try {
-                addLog("INFO", "Failover 1: Puter AI (Free Keyless GPT-4o-Mini)...");
-                updateLoadingCardStatus("Failover: Puter AI (GPT-4o-Mini) csatorna indítása...");
+                addLog("INFO", "Failover 1: Puter AI (Free Keyless Rotator)...");
+                updateLoadingCardStatus("Failover: Puter AI csatorna indítása...");
                 const messages = buildMessageArray(turns, currentEnPrompt, true);
                 const responseEn = await callPuterAPI(messages);
                 return { responseEn, modelUsed: "Puter AI (Free Keyless)" };
             } catch (err) {
-                addLog("WARN", `Puter AI hibaok: (${err.message}). Váltás Gemini-re...`);
+                addLog("WARN", `Puter AI hibaok: (${err.message}). Váltás AI Horde-ra...`);
             }
 
+            // 3. TIER: AI HORDE (ANONIM KULCSMENTES)
+            try {
+                addLog("INFO", "Failover 2: AI Horde Anonymous...");
+                updateLoadingCardStatus("Failover: AI Horde csatorna indítása...");
+                const messages = buildMessageArray(turns, currentEnPrompt, true);
+                const responseEn = await callAIHordeAPI(messages);
+                return { responseEn, modelUsed: "AI Horde (Free Keyless)" };
+            } catch (err) {
+                addLog("WARN", `AI Horde hibaok: (${err.message}). Váltás Gemini-re...`);
+            }
+
+            // 4. TIER: GEMINI
             if (geminiKey) {
                 try {
-                    addLog("INFO", "Failover 2: Gemini Flash...");
+                    addLog("INFO", "Failover 3: Gemini Flash...");
                     updateLoadingCardStatus("Failover: Gemini Flash csatorna indítása...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callGeminiAPI(geminiKey, messages);
@@ -692,9 +761,10 @@
                 }
             }
 
+            // 5. TIER: OPENROUTER
             if (openrouterKey) {
                 try {
-                    addLog("INFO", "Failover 3: OpenRouter Free Chain...");
+                    addLog("INFO", "Failover 4: OpenRouter Free Chain...");
                     updateLoadingCardStatus("Failover: OpenRouter csatorna indítása...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
@@ -704,7 +774,8 @@
                 }
             }
 
-            addLog("INFO", "Failover 4: Pollinations Clean Fallback...");
+            // 6. TIER: POLLINATIONS
+            addLog("INFO", "Failover 5: Pollinations Clean Fallback...");
             updateLoadingCardStatus("Failover: Pollinations csatorna indítása...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
