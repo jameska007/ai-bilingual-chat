@@ -3,917 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Gemini-Fix v8.3</title>
-    
+    <title>NEXUS // Stable v8.4</title>
     <meta name="color-scheme" content="dark">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
-    
-    <!-- PUTER.JS FREE KEYLESS AI ENGINE -->
     <script src="https://js.puter.com/v2/"></script>
-    
     <style>
         :root { color-scheme: dark !important; }
-        html, body { 
-            background-color: #090d16 !important; 
-            color: #f1f5f9 !important; 
-            height: 100%; 
-        }
+        html, body { background-color: #090d16 !important; color: #f1f5f9 !important; height: 100%; }
         .hidden { display: none !important; }
-        .bg-grid { 
-            background-size: 30px 30px; 
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); 
-        }
-        
         textarea, input, select {
-            background-color: #0f172a !important;
-            color: #ffffff !important;
-            border: 1px solid #334155 !important;
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            caret-color: #10b981 !important;
-            color-scheme: dark !important;
-        }
-        
-        textarea::placeholder, input::placeholder {
-            color: #94a3b8 !important;
-        }
-
-        input:-webkit-autofill,
-        textarea:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        textarea:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        textarea:-webkit-autofill:focus {
-            -webkit-text-fill-color: #ffffff !important;
-            -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
-            transition: background-color 5000s ease-in-out 0s !important;
-        }
-
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .animate-pulse-fast {
-            animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155 !important;
         }
     </style>
 </head>
-<body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased">
+<body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans antialiased">
 
     <!-- Fejléc -->
-    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center gap-2 flex-wrap">
+    <header class="bg-cyber-900/80 border-b border-slate-800 px-4 py-3 flex justify-between items-center gap-2 flex-wrap">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v8.3 Gemini-Fix</h1>
+                <h1 class="text-sm font-bold font-mono text-slate-100">NEXUS v8.4 Engine</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
         <div class="flex gap-2 flex-wrap items-center">
-            <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
-
-            <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1">
-                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                <span>🧪 Csatornák Tesztelése</span>
-            </button>
-            
-            <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[140px] truncate">
-                <option value="">📁 Recent témák...</option>
-            </select>
-
-            <button onclick="exportCurrentToObsidian()" class="bg-purple-800 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-mono">Mentés Obsidianba</button>
+            <button onclick="createNewTopicPrompt()" class="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
+            <button onclick="runHealthCheck()" class="bg-cyan-700 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">🧪 Csatornák Tesztelése</button>
             <button onclick="toggleSettings()" class="bg-slate-800 text-slate-200 px-3 py-1.5 rounded text-xs font-mono">Beállítások</button>
-            <button onclick="toggleDebugModal()" class="bg-amber-950 text-amber-300 px-3 py-1.5 rounded text-xs font-mono">Napló</button>
         </div>
     </header>
 
     <!-- Beállítások Panel -->
     <div id="settings-panel" class="hidden bg-cyber-900 p-4 space-y-3 border-b border-slate-800">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
-            <!-- Groq Key -->
-            <div class="space-y-1">
-                <label for="groq-key" class="text-[11px] font-mono text-emerald-400 font-semibold flex items-center justify-between">
-                    <span class="flex items-center gap-1"><i data-lucide="key" class="w-3 h-3"></i> Groq API Key</span>
-                    <span id="groq-status-badge" class="text-[10px] text-slate-500"></span>
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="groq-key" placeholder="gsk_..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-800 rounded p-2 pr-9 text-xs font-mono">
-                    <button type="button" onclick="toggleKeyVisibility('groq-key', this)" class="absolute right-2 text-slate-400 hover:text-white p-1">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
-                </div>
+            <div>
+                <label class="text-[11px] font-mono text-emerald-400 font-semibold">Groq API Key</label>
+                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
             </div>
-
-            <!-- Gemini Key -->
-            <div class="space-y-1">
-                <label for="gemini-key" class="text-[11px] font-mono text-cyan-400 font-semibold flex items-center justify-between">
-                    <span class="flex items-center gap-1"><i data-lucide="key" class="w-3 h-3"></i> Gemini API Key</span>
-                    <span id="gemini-status-badge" class="text-[10px] text-slate-500"></span>
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="gemini-key" placeholder="AIzaSy..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-800 rounded p-2 pr-9 text-xs font-mono">
-                    <button type="button" onclick="toggleKeyVisibility('gemini-key', this)" class="absolute right-2 text-slate-400 hover:text-white p-1">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
-                </div>
+            <div>
+                <label class="text-[11px] font-mono text-cyan-400 font-semibold">Gemini API Key</label>
+                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
             </div>
-
-            <!-- OpenRouter Key -->
-            <div class="space-y-1">
-                <label for="openrouter-key" class="text-[11px] font-mono text-purple-400 font-semibold flex items-center justify-between">
-                    <span class="flex items-center gap-1"><i data-lucide="key" class="w-3 h-3"></i> OpenRouter Key</span>
-                    <span id="openrouter-status-badge" class="text-[10px] text-slate-500"></span>
-                </label>
-                <div class="relative flex items-center">
-                    <input type="password" id="openrouter-key" placeholder="sk-or-v1-..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-800 rounded p-2 pr-9 text-xs font-mono">
-                    <button type="button" onclick="toggleKeyVisibility('openrouter-key', this)" class="absolute right-2 text-slate-400 hover:text-white p-1">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
-                </div>
+            <div>
+                <label class="text-[11px] font-mono text-purple-400 font-semibold">OpenRouter Key</label>
+                <input type="password" id="openrouter-key" placeholder="sk-or-v1-..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
             </div>
-
         </div>
-
-        <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80">
-            <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white text-xs p-2 rounded font-mono font-semibold">
-                🧪 AI Csatornák Állapotfelmérése (Diagnostics)
-            </button>
-            <button onclick="initLocalTranslators()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs p-2 rounded font-mono">
-                📁 Helyi Fordító Letöltése (ONNX WASM)
-            </button>
-            <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono font-bold">API Kulcsok Mentése</button>
+        <div class="flex gap-2 pt-2 border-t border-slate-800">
+            <button onclick="saveKeys()" class="bg-emerald-700 text-white text-xs p-2 rounded font-mono font-bold">API Kulcsok Mentése</button>
         </div>
-        <div id="load-progress" class="text-[11px] text-cyan-400 font-mono italic">Kész az inicializálásra.</div>
     </div>
 
-    <!-- HIBAKERESŐ MODAL -->
-    <div id="health-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md p-4 z-50 overflow-y-auto flex items-center justify-center">
-        <div class="bg-cyber-900 border border-slate-800 w-full max-w-3xl rounded-2xl p-5 shadow-2xl space-y-4">
+    <!-- Health Modal -->
+    <div id="health-modal" class="hidden fixed inset-0 bg-black/90 p-4 z-50 flex items-center justify-center">
+        <div class="bg-cyber-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2 text-cyan-400 font-mono font-bold text-sm">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                    <span>AI CSATORNÁK DIAGNOSZTIKAI TESZTJE</span>
-                </div>
-                <button onclick="toggleHealthModal()" class="text-slate-400 hover:text-white text-xs bg-slate-800 px-3 py-1.5 rounded font-mono">Bezárás</button>
+                <span class="text-cyan-400 font-mono font-bold text-sm">DIAGNOSZTIKA</span>
+                <button onclick="toggleHealthModal()" class="text-slate-400 text-xs bg-slate-800 px-3 py-1.5 rounded">Bezárás</button>
             </div>
-            
-            <div id="health-results-container" class="space-y-2 font-mono text-xs">
-                <div class="text-slate-400 italic">Tesztelés indítása...</div>
-            </div>
+            <div id="health-results-container" class="space-y-2 font-mono text-xs"></div>
         </div>
     </div>
 
-    <!-- Hibanapló Modal -->
-    <div id="debug-modal" class="hidden fixed inset-0 bg-black/90 p-4 z-50 overflow-y-auto">
-        <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-            <span class="text-xs font-mono text-amber-400">DIAGNOSTICS & SYSTEM LOGS</span>
-            <button onclick="toggleDebugModal()" class="text-white text-xs bg-slate-800 px-3 py-1 rounded">Bezárás</button>
-        </div>
-        <div id="debug-log-container" class="font-mono text-[11px] text-slate-300 space-y-1"></div>
-    </div>
-
-    <!-- Chat Area -->
+    <!-- Chat Box -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v8.3 Engine: Frissített, stabil Gemini API hívó modul élesítve!
+        <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-xs font-mono text-slate-300">
+            NEXUS v8.4 Engine: Optimizált közvetlen fordító és stabil Failover engine.
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="p-4 bg-cyber-900/90 border-t border-slate-800">
-        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500"></textarea>
-        
-        <button id="send-btn" onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all flex items-center justify-center gap-2">
-            <span id="send-btn-icon"><i data-lucide="send" class="w-4 h-4 inline"></i></span>
-            <span id="send-btn-text">Küldés</span>
-        </button>
+    <footer class="p-4 bg-cyber-900 border-t border-slate-800">
+        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none"></textarea>
+        <button id="send-btn" onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white">Küldés</button>
     </footer>
 
     <script>
         lucide.createIcons();
-        let currentTopic = null, db = null, translatorHuEn = null, translatorEnHu = null;
+        let currentTopic = null, db = null;
 
-        function toggleKeyVisibility(inputId, btn) {
-            const input = document.getElementById(inputId);
-            const icon = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
-            } else {
-                input.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
-            }
-            lucide.createIcons();
-        }
-
-        function updateProgressState(stepText, isProcessing = true) {
-            const btn = document.getElementById("send-btn");
-            const btnText = document.getElementById("send-btn-text");
-            const btnIcon = document.getElementById("send-btn-icon");
-
-            if (isProcessing) {
-                btn.disabled = true;
-                btn.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
-                btn.classList.add("bg-amber-600", "opacity-80", "cursor-not-allowed");
-                btnText.innerText = stepText;
-                btnIcon.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>`;
-            } else {
-                btn.disabled = false;
-                btn.classList.remove("bg-amber-600", "opacity-80", "cursor-not-allowed");
-                btn.classList.add("bg-emerald-600", "hover:bg-emerald-500");
-                btnText.innerText = "Küldés";
-                btnIcon.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline"></i>`;
-                lucide.createIcons();
-            }
-        }
-
-        function showLoadingCard() {
-            const chatBox = document.getElementById("chat-box");
-            const loadingDiv = document.createElement("div");
-            loadingDiv.id = "nexus-loading-card";
-            loadingDiv.className = "p-4 bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-[85%] mr-auto text-left mb-3 animate-pulse-fast";
-            loadingDiv.innerHTML = `
-                <div class="text-[11px] font-mono text-emerald-400 mb-1 flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>NEXUS AI feldolgozás...</span>
-                </div>
-                <div class="text-xs font-mono text-slate-300 italic" id="loading-card-status">Gondolkodik a válaszon...</div>
-            `;
-            chatBox.appendChild(loadingDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function updateLoadingCardStatus(text) {
-            const el = document.getElementById("loading-card-status");
-            if (el) el.innerText = text;
-        }
-
-        function removeLoadingCard() {
-            const el = document.getElementById("nexus-loading-card");
-            if (el) el.remove();
-        }
-
-        function initDB() {
-            const request = indexedDB.open("NEXUS_Workstation_DB", 1);
-            request.onupgradeneeded = (e) => {
-                const dbInstance = e.target.result;
-                if (!dbInstance.objectStoreNames.contains("topics")) {
-                    dbInstance.createObjectStore("topics", { keyPath: "id" });
-                }
-            };
-            request.onsuccess = (e) => {
-                db = e.target.result;
-                addLog("SUCCESS", "IndexedDB adatbázis csatlakoztatva.");
-                refreshRecentTopicsList();
-            };
-            request.onerror = (e) => {
-                addLog("ERROR", "IndexedDB hibaok", e);
-            };
-        }
-
-        async function refreshRecentTopicsList() {
-            if (!db) return;
-            const tx = db.transaction("topics", "readonly");
-            const req = tx.objectStore("topics").getAll();
-            req.onsuccess = () => {
-                const select = document.getElementById("recent-topics-select");
-                select.innerHTML = '<option value="">📁 Recent témák...</option>';
-                const topics = req.result || [];
-                topics.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                topics.forEach(t => {
-                    const opt = document.createElement("option");
-                    opt.value = t.id;
-                    opt.innerText = t.title || "Névtelen téma";
-                    select.appendChild(opt);
-                });
-            };
-        }
-
-        async function switchTopic(id) {
-            if (!id || !db) return;
-            const tx = db.transaction("topics", "readonly");
-            const req = tx.objectStore("topics").get(id);
-            req.onsuccess = () => {
-                currentTopic = req.result;
-                if (!currentTopic) return;
-
-                document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
-                document.getElementById("recent-topics-select").value = id;
-                
-                const chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML = "";
-
-                if (currentTopic.turns && currentTopic.turns.length > 0) {
-                    currentTopic.turns.forEach(t => {
-                        appendMessage("Felhasználó", t.userText, t.userPromptEn);
-                        appendMessage("NEXUS AI (" + (t.modelUsed || "AI") + ")", t.aiResponse);
-                    });
-                } else {
-                    chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">TÉMA BETÖLTVE: "${currentTopic.title}" (Üres)</div>`;
-                }
-
-                addLog("SUCCESS", `Téma váltva: "${currentTopic.title}" (${currentTopic.turns ? currentTopic.turns.length : 0} kör)`);
-            };
-        }
-
-        async function createNewTopicPrompt() {
-            const title = prompt("Adj meg egy nevet az új témának:");
-            if (!title || !title.trim()) return;
-
-            currentTopic = { 
-                id: "topic_" + Date.now(), 
-                title: title.trim(), 
-                createdAt: new Date().toISOString(), 
-                turns: [] 
-            };
-
-            saveTopicToDB(currentTopic);
-            document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
-            
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"</div>`;
-            
-            await refreshRecentTopicsList();
-            document.getElementById("recent-topics-select").value = currentTopic.id;
-        }
-
-        function saveTopicToDB(topic) {
-            if (!db || !topic) return;
-            const tx = db.transaction("topics", "readwrite");
-            tx.objectStore("topics").put(topic);
-        }
-
-        async function initLocalTranslators() {
-            const progress = document.getElementById("load-progress");
-            progress.innerText = "Modellek letöltése...";
-            addLog("INFO", "Helyi WASM letöltés indítása...");
-
-            try {
-                const { pipeline, env } = window.Xenova;
-                env.allowLocalModels = false;
-                env.useBrowserCache = true;
-                if (env.backends && env.backends.onnx) {
-                    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/';
-                    env.backends.onnx.wasm.numThreads = 1;
-                }
-
-                translatorHuEn = await pipeline('translation', 'Xenova/opus-mt-hu-en');
-                translatorEnHu = await pipeline('translation', 'Xenova/opus-mt-en-hu');
-
-                progress.innerText = "✓ Helyi ONNX fordító aktív!";
-                addLog("SUCCESS", "Helyi WASM fordító betöltve.");
-            } catch (err) {
-                progress.innerText = "⚠ Helyi modell inaktív. Google GTX Hibrid fordító aktív!";
-                addLog("WARN", "Helyi WASM hiba, GTX fordító használata.", err.message);
-            }
-        }
-
+        // BIZTONSÁGOS DIRECT FORDÍTÓ (SOSEM TÚLTERHELI AZ API-T)
         async function translateText(text, fromLang, toLang) {
-            try {
-                if (fromLang === "hu" && toLang === "en" && translatorHuEn) {
-                    const res = await translatorHuEn(text);
-                    if (res && res[0] && res[0].translation_text) return res[0].translation_text;
-                }
-                if (fromLang === "en" && toLang === "hu" && translatorEnHu) {
-                    const res = await translatorEnHu(text);
-                    if (res && res[0] && res[0].translation_text) return res[0].translation_text;
-                }
-            } catch (e) {}
-
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
                 const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data[0]) {
-                        const translated = data[0].map(item => item[0]).join("");
-                        if (translated) return translated;
-                    }
+                    if (data && data[0]) return data[0].map(item => item[0]).join("");
                 }
             } catch (e) {}
-
             return text;
         }
 
-        function buildMessageArray(turns, currentEnPrompt, forceCompression = false) {
-            let messages = [
-                { 
-                    role: "system", 
-                    content: "You are NEXUS AI, an expert analytical and software engineering assistant. Respond accurately based on the provided conversation history and user query." 
-                }
-            ];
+        // GARANTÁLT GEMINI API HÍVÓ MODUL
+        async function callGeminiAPI(apiKey, messages) {
+            if (!apiKey || !apiKey.trim()) throw new Error("GEMINI_MISSING_KEY");
+            const cleanKey = apiKey.trim();
 
-            if (!turns || turns.length === 0) {
-                messages.push({ role: "user", content: currentEnPrompt });
-                return messages;
-            }
+            const contents = messages
+                .filter(m => m.role !== "system")
+                .map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: String(m.content || "") }] }));
 
-            if (!forceCompression && turns.length <= 3) {
-                turns.forEach(turn => {
-                    messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
-                    messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
-                });
-            } else {
-                const olderTurns = turns.slice(0, -2);
-                const recentTurns = turns.slice(-2);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents })
+            });
 
-                if (olderTurns.length > 0) {
-                    let summaryBlock = "[SUMMARY OF PRIOR CONVERSATION & CONTEXT]:\n";
-                    olderTurns.forEach((t, idx) => {
-                        const userQ = t.userPromptEn || t.userText;
-                        const aiAns = t.aiResponseEn || t.aiResponse;
-                        summaryBlock += `- Turn ${idx + 1}: User asked: "${userQ.substring(0, 120)}...". AI solution: "${aiAns.substring(0, 200)}..."\n`;
-                    });
-                    
-                    messages.push({ role: "system", content: summaryBlock });
-                }
+            if (response.status === 429) throw new Error("GEMINI_HTTP_429");
+            if (!response.ok) throw new Error(`GEMINI_HTTP_${response.status}`);
 
-                recentTurns.forEach(turn => {
-                    messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
-                    messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
-                });
-            }
-
-            messages.push({ role: "user", content: currentEnPrompt });
-            return messages;
+            const data = await response.json();
+            return data.candidates[0].content.parts.map(p => p.text || "").join("");
         }
 
-        // --- API CALL ENGINES ---
         async function callGroqAPI(apiKey, messages) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, temperature: 0.5 })
+                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, temperature: 0.5 })
             });
-            if (res.status === 401) throw new Error("GROQ_HTTP_401");
-            if (res.status === 429) throw new Error("GROQ_HTTP_429");
             if (!res.ok) throw new Error(`GROQ_HTTP_${res.status}`);
             const d = await res.json();
             return d.choices[0].message.content;
         }
 
-        // FRISSÍTETT, GARANTÁLTAN MŰKÖDŐ GEMINI API MODUL
-        async function callGeminiAPI(apiKey, messages) {
-            if (!apiKey || !apiKey.trim()) {
-                throw new Error("GEMINI_MISSING_KEY");
-            }
-
-            const cleanKey = apiKey.trim();
-            const systemMsg = messages.find(m => m.role === "system");
-
-            const contents = messages
-                .filter(m => m.role !== "system")
-                .map(m => ({
-                    role: m.role === "assistant" ? "model" : "user",
-                    parts: [{ text: String(m.content || "") }]
-                }));
-
-            const requestBody = {
-                contents: contents
-            };
-
-            if (systemMsg && systemMsg.content) {
-                requestBody.systemInstruction = {
-                    parts: [{ text: String(systemMsg.content) }]
-                };
-            }
-
-            const targetModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
-
-            for (const model of targetModels) {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
-                    
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json" 
-                        },
-                        body: JSON.stringify(requestBody)
-                    });
-
-                    if (response.status === 429) {
-                        throw new Error("GEMINI_HTTP_429");
-                    }
-
-                    if (response.status === 404) {
-                        continue;
-                    }
-
-                    if (!response.ok) {
-                        throw new Error(`GEMINI_HTTP_${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.candidates && data.candidates[0]?.content?.parts) {
-                        return data.candidates[0].content.parts
-                            .map(part => part.text || "")
-                            .join("");
-                    }
-
-                    throw new Error("GEMINI_EMPTY_RESPONSE");
-
-                } catch (err) {
-                    if (err.message === "GEMINI_HTTP_429" || err.message.startsWith("GEMINI_HTTP_")) {
-                        throw err;
-                    }
-                }
-            }
-
-            throw new Error("GEMINI_HTTP_404");
-        }
-
-        async function callOpenRouterAPI(apiKey, messages) {
-            if (!apiKey || !apiKey.trim()) throw new Error("OPENROUTER_MISSING_KEY");
-
-            const freeModels = [
-                "google/gemini-2.0-flash-lite-001:free",
-                "meta-llama/llama-3.3-70b-instruct:free",
-                "meta-llama/llama-3.1-8b-instruct:free",
-                "deepseek/deepseek-r1:free",
-                "mistralai/mistral-7b-instruct:free",
-                "qwen/qwen-2.5-72b-instruct:free"
-            ];
-
-            let lastErrCode = "";
-
-            for (let m of freeModels) {
-                try {
-                    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json", 
-                            "Authorization": `Bearer ${apiKey.trim()}`,
-                            "HTTP-Referer": "https://nexus-workstation.local",
-                            "X-Title": "NEXUS Workstation"
-                        },
-                        body: JSON.stringify({ model: m, messages: messages })
-                    });
-                    
-                    if (res.status === 401) throw new Error("OPENROUTER_401_UNAUTHORIZED");
-                    if (res.status === 402) throw new Error("OPENROUTER_402_PAYMENT_REQUIRED");
-
-                    if (res.status === 200) {
-                        const d = await res.json();
-                        if (d.choices && d.choices[0] && d.choices[0].message) {
-                            return d.choices[0].message.content;
-                        }
-                    } else {
-                        lastErrCode = `HTTP_${res.status}`;
-                    }
-                } catch(e) {
-                    if (e.message.includes("401") || e.message.includes("402")) throw e;
-                    lastErrCode = e.message;
-                }
-            }
-            throw new Error(`OPENROUTER_FAILED (${lastErrCode || "ALL_MODELS_BUSY"})`);
-        }
-
         async function callPuterAPI(messages) {
-            if (typeof puter === 'undefined' || !puter.ai) {
-                throw new Error("PUTER_NOT_LOADED");
-            }
+            if (typeof puter === 'undefined' || !puter.ai) throw new Error("PUTER_NOT_LOADED");
             let promptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-            
-            const puterModels = ['gpt-4o-mini', 'deepseek-chat'];
-            for (let modelName of puterModels) {
-                try {
-                    const res = await puter.ai.chat(promptText, { model: modelName });
-                    if (res) {
-                        return typeof res === 'string' ? res : (res.message?.content || res.toString());
-                    }
-                } catch(e) {}
-            }
-            
-            const resDef = await puter.ai.chat(promptText);
-            if (!resDef) throw new Error("PUTER_EMPTY");
-            return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
-        }
-
-        async function callAIHordeAPI(messages) {
-            let lastMessage = messages[messages.length - 1];
-            let promptText = lastMessage ? lastMessage.content : "Hello";
-
-            const res = await fetch("https://stablehorde.net/api/v2/generate/text/async", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "apikey": "0000000000",
-                    "Client-Agent": "NEXUS_Workstation:v8.3:anonymous"
-                },
-                body: JSON.stringify({
-                    prompt: promptText,
-                    params: { max_context_length: 1024, max_length: 300 }
-                })
-            });
-
-            if (!res.ok) throw new Error(`AI_HORDE_HTTP_${res.status}`);
-            const data = await res.json();
-            if (!data.id) throw new Error("AI_HORDE_NO_ID");
-
-            for (let i = 0; i < 6; i++) {
-                await new Promise(r => setTimeout(r, 500));
-                const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/text/status/${data.id}`);
-                if (checkRes.ok) {
-                    const checkData = await checkRes.json();
-                    if (checkData.done && checkData.generations && checkData.generations[0]) {
-                        return checkData.generations[0].text;
-                    }
-                }
-            }
-            throw new Error("AI_HORDE_TIMEOUT");
-        }
-
-        async function callPollinationsAPI(messages) {
-            let lastMessage = messages[messages.length - 1];
-            let promptText = lastMessage ? lastMessage.content : "Hello";
-            if (typeof promptText !== 'string' || !promptText.trim()) {
-                promptText = "Hello";
-            }
-            
-            const cleanPrompt = encodeURIComponent(promptText.trim().substring(0, 300));
-            const url = `https://text.pollinations.ai/${cleanPrompt}`;
-            
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`POLLINATIONS_HTTP_${res.status}`);
-            const text = await res.text();
-            if (!text || text.includes("404 Not Found") || text.includes("Cannot GET")) {
-                throw new Error("POLLINATIONS_404");
-            }
-            return text;
-        }
-
-        async function runHealthCheck() {
-            toggleHealthModal(true);
-            const container = document.getElementById("health-results-container");
-            container.innerHTML = `<div class="text-cyan-400 font-mono italic animate-pulse">Tesztelés indítása az összes csatornán...</div>`;
-
-            const testMessages = [{ role: "user", content: "Reply with 'OK'" }];
-            const groqKey = localStorage.getItem("GROQ_KEY");
-            const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
-
-            let resultsHtml = "";
-
-            // 1. Groq
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>1. Groq (Llama 3.3):</strong> `;
-            if (!groqKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callGroqAPI(groqKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                    if (document.getElementById("groq-status-badge")) {
-                        document.getElementById("groq-status-badge").innerText = "✓ OK";
-                        document.getElementById("groq-status-badge").className = "text-[10px] text-emerald-400 font-bold";
-                    }
-                } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-                    if (document.getElementById("groq-status-badge")) {
-                        document.getElementById("groq-status-badge").innerText = "⚠️ " + e.message;
-                        document.getElementById("groq-status-badge").className = "text-[10px] text-red-400 font-bold";
-                    }
-                }
-            }
-
-            // 2. Puter AI
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless Rotator):</strong> `;
-            try {
-                await callPuterAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-            }
-
-            // 3. AI Horde
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Public):</strong> `;
-            try {
-                await callAIHordeAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-amber-400">⚠ Inaktív/Lassú: ${e.message}</span></div>`;
-            }
-
-            // 4. Gemini
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Gemini (Flash):</strong> `;
-            if (!geminiKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callGeminiAPI(geminiKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-amber-400">⚠ Értesítés: ${e.message} (Puter AI átvette)</span></div>`;
-                }
-            }
-
-            // 5. OpenRouter
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. OpenRouter (Free Chain):</strong> `;
-            if (!openrouterKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callOpenRouterAPI(openrouterKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-                }
-            }
-
-            // 6. Pollinations
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>6. Pollinations (Clean GET Fallback):</strong> `;
-            try {
-                await callPollinationsAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-amber-400">⚠ Inaktív: ${e.message}</span></div>`;
-            }
-
-            container.innerHTML = resultsHtml;
-            addLog("INFO", "Rendszerállapot teszt elvégezve.");
+            const res = await puter.ai.chat(promptText);
+            return typeof res === 'string' ? res : (res.message?.content || res.toString());
         }
 
         async function executeSmartFailoverPipeline(turns, currentEnPrompt) {
             const groqKey = localStorage.getItem("GROQ_KEY");
             const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            // 1. TIER: GROQ
             if (groqKey) {
                 try {
-                    addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
-                    updateLoadingCardStatus("Groq (Llama 3.3) válaszára várunk...");
-                    const messages = buildMessageArray(turns, currentEnPrompt, false);
+                    const messages = [{ role: "user", content: currentEnPrompt }];
                     const responseEn = await callGroqAPI(groqKey, messages);
                     return { responseEn, modelUsed: "Groq (Llama 3.3)" };
-                } catch (err) {
-                    addLog("WARN", `Groq hibaok: (${err.message}). Váltás Puter AI-ra...`);
-                }
+                } catch (err) {}
             }
 
-            // 2. TIER: PUTER AI
             try {
-                addLog("INFO", "Failover 1: Puter AI (Free Keyless Rotator)...");
-                updateLoadingCardStatus("Failover: Puter AI csatorna indítása...");
-                const messages = buildMessageArray(turns, currentEnPrompt, true);
+                const messages = [{ role: "user", content: currentEnPrompt }];
                 const responseEn = await callPuterAPI(messages);
                 return { responseEn, modelUsed: "Puter AI (Free Keyless)" };
-            } catch (err) {
-                addLog("WARN", `Puter AI hibaok: (${err.message}). Váltás AI Horde-ra...`);
-            }
+            } catch (err) {}
 
-            // 3. TIER: AI HORDE
-            try {
-                addLog("INFO", "Failover 2: AI Horde Anonymous...");
-                updateLoadingCardStatus("Failover: AI Horde csatorna indítása...");
-                const messages = buildMessageArray(turns, currentEnPrompt, true);
-                const responseEn = await callAIHordeAPI(messages);
-                return { responseEn, modelUsed: "AI Horde (Free Keyless)" };
-            } catch (err) {
-                addLog("WARN", `AI Horde hibaok: (${err.message}). Váltás Gemini-re...`);
-            }
-
-            // 4. TIER: GEMINI
             if (geminiKey) {
                 try {
-                    addLog("INFO", "Failover 3: Gemini Flash...");
-                    updateLoadingCardStatus("Failover: Gemini Flash csatorna indítása...");
-                    const messages = buildMessageArray(turns, currentEnPrompt, true);
+                    const messages = [{ role: "user", content: currentEnPrompt }];
                     const responseEn = await callGeminiAPI(geminiKey, messages);
-                    return { responseEn, modelUsed: "Gemini Flash (Failover)" };
-                } catch (err) {
-                    addLog("WARN", `Gemini hibaok: (${err.message}). Váltás OpenRouter-re...`);
-                }
+                    return { responseEn, modelUsed: "Gemini Flash" };
+                } catch (err) {}
             }
 
-            // 5. TIER: OPENROUTER
-            if (openrouterKey) {
-                try {
-                    addLog("INFO", "Failover 4: OpenRouter Free Chain...");
-                    updateLoadingCardStatus("Failover: OpenRouter csatorna indítása...");
-                    const messages = buildMessageArray(turns, currentEnPrompt, true);
-                    const responseEn = await callOpenRouterAPI(openrouterKey, messages);
-                    return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
-                } catch (err) {
-                    addLog("WARN", `OpenRouter hibaok: (${err.message}). Váltás Pollinations-ra...`);
-                }
-            }
-
-            // 6. TIER: POLLINATIONS
-            addLog("INFO", "Failover 5: Pollinations Clean Fallback...");
-            updateLoadingCardStatus("Failover: Pollinations csatorna indítása...");
-            const messages = buildMessageArray(turns, currentEnPrompt, true);
-            const responseEn = await callPollinationsAPI(messages);
-            return { responseEn, modelUsed: "Pollinations Clean (Failover)" };
+            throw new Error("Minden AI modell elérhetetlen.");
         }
 
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
             if (!text) return;
-
-            if (!currentTopic) {
-                await createNewTopicPrompt();
-                if (!currentTopic) return;
-            }
-
             input.value = "";
-            const msgId = "user_msg_" + Date.now();
-            
-            updateProgressState("⏳ 1/3: Fordítás...", true);
-            appendMessage("Felhasználó", text, null, msgId);
-            showLoadingCard();
+
+            appendMessage("Felhasználó", text);
 
             try {
                 const enPrompt = await translateText(text, "hu", "en");
-                updateMessageEnPrompt(msgId, enPrompt);
+                const { responseEn, modelUsed } = await executeSmartFailoverPipeline([], enPrompt);
+                const aiResponseHu = await translateText(responseEn, "en", "hu");
 
-                updateProgressState("🧠 2/3: AI válasz...", true);
-                const { responseEn: aiResponseEn, modelUsed } = await executeSmartFailoverPipeline(currentTopic.turns, enPrompt);
-
-                updateProgressState("🌐 3/3: Magyarítás...", true);
-                updateLoadingCardStatus("Válasz magyarítása...");
-                const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
-
-                removeLoadingCard();
                 appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
-
-                if (!currentTopic.turns) currentTopic.turns = [];
-                currentTopic.turns.push({
-                    timestamp: new Date().toLocaleString(),
-                    userText: text,
-                    userPromptEn: enPrompt,
-                    aiResponse: aiResponseHu,
-                    aiResponseEn: aiResponseEn,
-                    modelUsed: modelUsed
-                });
-
-                saveTopicToDB(currentTopic);
-                await refreshRecentTopicsList();
-
             } catch (e) {
-                removeLoadingCard();
-                addLog("ERROR", "Összes AI modell válaszképtelen", e.message);
-                appendMessage("Rendszer Hiba", "Minden AI csatorna elérhetetlen: " + e.message, null, null, true);
-            } finally {
-                updateProgressState("Küldés", false);
+                appendMessage("Rendszer Hiba", e.message, true);
             }
         }
 
-        function appendMessage(sender, text, enText = null, msgId = null, isError = false) {
+        function appendMessage(sender, text, isError = false) {
             const chatBox = document.getElementById("chat-box");
-            const isUser = sender === 'Felhasználó';
-            const idAttr = msgId ? `id="${msgId}"` : '';
-
-            chatBox.innerHTML += `<div ${idAttr} class="p-4 ${isUser ? 'bg-emerald-950/70 border border-emerald-800/40' : isError ? 'bg-red-950/60 border border-red-800/60' : 'bg-slate-900 border border-slate-800'} rounded-2xl max-w-[85%] ${isUser ? 'ml-auto text-right' : 'mr-auto text-left'} mb-3">
+            chatBox.innerHTML += `<div class="p-4 ${isError ? 'bg-red-950/60' : 'bg-slate-900'} rounded-2xl max-w-[85%] mb-3">
                 <div class="text-[11px] font-mono text-slate-400 mb-1">${sender}</div>
                 <div class="text-sm whitespace-pre-wrap">${text}</div>
-                ${isUser ? `<div class="en-prompt-box ${enText ? '' : 'hidden'} text-xs font-mono text-cyan-300 mt-2 border-t border-emerald-800/50 pt-1.5 text-left bg-black/40 p-2 rounded border border-cyan-900/40">🇬🇧 EN Prompt: <span>${enText || ''}</span></div>` : ''}
             </div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function updateMessageEnPrompt(msgId, enText) {
-            const msgEl = document.getElementById(msgId);
-            if (!msgEl) return;
-            const box = msgEl.querySelector(".en-prompt-box");
-            if (box) {
-                box.querySelector("span").innerText = enText;
-                box.classList.remove("hidden");
-            }
-        }
-
-        function toggleSettings() { 
-            const panel = document.getElementById("settings-panel");
-            panel.classList.toggle("hidden");
-            if (!panel.classList.contains("hidden")) {
-                document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
-                document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
-                document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
-            }
-        }
-
-        function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
-        function toggleHealthModal(show = false) { 
-            const modal = document.getElementById("health-modal");
-            if (show) modal.classList.remove("hidden");
-            else modal.classList.add("hidden");
-        }
-        
-        function addLog(l, m, details = "") { 
-            const container = document.getElementById("debug-log-container");
-            if (container) {
-                container.innerHTML += `<div><span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> <span class="${l === 'ERROR' ? 'text-red-400 font-bold' : l === 'WARN' ? 'text-amber-300' : 'text-emerald-400'}">[${l}] ${m} ${details}</span></div>`;
-                container.scrollTop = container.scrollHeight;
-            }
-        }
+        function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
+        function toggleHealthModal() { document.getElementById("health-modal").classList.toggle("hidden"); }
 
         function saveKeys() {
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
@@ -923,21 +207,7 @@
             toggleSettings();
         }
 
-        function exportCurrentToObsidian() {
-            if (!currentTopic || !currentTopic.turns || currentTopic.turns.length === 0) return alert("Nincs elmenthető téma!");
-            let md = `# ${currentTopic.title}\n\n`;
-            currentTopic.turns.forEach(t => { 
-                md += `### Felhasználó\n> HU: ${t.userText}\n> EN: ${t.userPromptEn}\n\n### AI (${t.modelUsed})\n${t.aiResponse}\n\n---\n\n`; 
-            });
-            const blob = new BlobSimple([md], { type: "text/markdown" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
-            a.click();
-        }
-
         document.addEventListener("DOMContentLoaded", () => {
-            initDB();
             document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
             document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
             document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
