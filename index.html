@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Full-Restore v5.3</title>
+    <title>NEXUS // Smart-Failover v6.0</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -24,7 +24,6 @@
             background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); 
         }
         
-        /* Android Chrome Beviteli Mező Fix */
         textarea, input, select {
             background-color: #0f172a !important;
             color: #ffffff !important;
@@ -60,14 +59,13 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v5.3 Full-Restore</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.0 Smart-Failover</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
         <div class="flex gap-2 flex-wrap items-center">
             <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
             
-            <!-- ELŐZMÉNYEK / RECENT LISTA -->
             <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[150px] truncate">
                 <option value="">📁 Recent témák...</option>
             </select>
@@ -81,15 +79,15 @@
     <!-- Beállítások Panel -->
     <div id="settings-panel" class="hidden bg-cyber-900 p-4 space-y-3 border-b border-slate-800">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="password" id="gemini-key" placeholder="Gemini API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
-            <input type="password" id="groq-key" placeholder="Groq API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
-            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="groq-key" placeholder="Groq API Key (Elsődleges)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="gemini-key" placeholder="Gemini API Key (Failover 1)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key (Failover 2)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
         </div>
         <div class="flex flex-wrap gap-2 pt-2">
             <button onclick="initLocalTranslators()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs p-2 rounded font-mono">
                 📁 Helyi Fordító Letöltése (ONNX WASM)
             </button>
-            <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono">Mentés</button>
+            <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono">API Kulcsok Mentése</button>
         </div>
         <div id="load-progress" class="text-[11px] text-cyan-400 font-mono italic">Kész az inicializálásra.</div>
     </div>
@@ -106,7 +104,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            Válassz egy korábbi beszélgetést a **Recent témák** listából, vagy hozz létre egyet az **Új téma** gombbal!
+            NEXUS v6.0 Engine: Token-limithiba (429) esetén a rendszer automatikusan tömöríti a csevegési előzményeket és átvált a tartalék modellre!
         </div>
     </main>
 
@@ -120,7 +118,6 @@
         lucide.createIcons();
         let currentTopic = null, db = null, translatorHuEn = null, translatorEnHu = null;
 
-        // --- INDEXEDDB INICIALIZÁLÁS ÉS HELYREÁLLÍTÁS ---
         function initDB() {
             const request = indexedDB.open("NEXUS_Workstation_DB", 1);
             request.onupgradeneeded = (e) => {
@@ -147,20 +144,13 @@
                 const select = document.getElementById("recent-topics-select");
                 select.innerHTML = '<option value="">📁 Recent témák...</option>';
                 const topics = req.result || [];
-                
-                // Legfrissebb témák előre
                 topics.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                
                 topics.forEach(t => {
                     const opt = document.createElement("option");
                     opt.value = t.id;
                     opt.innerText = t.title || "Névtelen téma";
                     select.appendChild(opt);
                 });
-                
-                if (topics.length > 0) {
-                    addLog("INFO", `${topics.length} korábbi téma betöltve az előzményekből.`);
-                }
             };
         }
 
@@ -218,7 +208,6 @@
             tx.objectStore("topics").put(topic);
         }
 
-        // --- FORDÍTÓ ENGINE (Hybrid: Local WASM + Fallback) ---
         async function initLocalTranslators() {
             const progress = document.getElementById("load-progress");
             progress.innerText = "Modellek letöltése...";
@@ -290,7 +279,163 @@
             return text;
         }
 
-        // --- CSHAT ÉS MEMÓRIA MŰKÖDÉS ---
+        // --- KONTEXTUS TÖMMÖRÍTŐ ÉS MEMÓRIA ÉPÍTŐ ENGINE ---
+        function buildMessageArray(turns, currentEnPrompt, forceCompression = false) {
+            let messages = [
+                { 
+                    role: "system", 
+                    content: "You are NEXUS AI, an expert analytical and software engineering assistant. Respond accurately based on the provided conversation history and user query." 
+                }
+            ];
+
+            if (!turns || turns.length === 0) {
+                messages.push({ role: "user", content: currentEnPrompt });
+                return messages;
+            }
+
+            // Ha nincs kényszerített tömörítés és kevés a kör (<=3), mehet a teljes szöveg
+            if (!forceCompression && turns.length <= 3) {
+                turns.forEach(turn => {
+                    messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
+                    messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
+                });
+            } else {
+                // TÖMMÖRÍTÉSI ALGORITMUS: A korábbi körök kivonatolása + utolsó 2 kör megtartása
+                const olderTurns = turns.slice(0, -2);
+                const recentTurns = turns.slice(-2);
+
+                if (olderTurns.length > 0) {
+                    let summaryBlock = "[SUMMARY OF PRIOR CONVERSATION & CONTEXT]:\n";
+                    olderTurns.forEach((t, idx) => {
+                        const userQ = t.userPromptEn || t.userText;
+                        const aiAns = t.aiResponseEn || t.aiResponse;
+                        // Rövidített kivonat a régebbi körökből
+                        summaryBlock += `- Turn ${idx + 1}: User asked: "${userQ.substring(0, 120)}...". AI solution/decision: "${aiAns.substring(0, 200)}..."\n`;
+                    });
+                    
+                    messages.push({ role: "system", content: summaryBlock });
+                }
+
+                // Az utolsó 2 kör változatlan formában bekerül a friss kontextusért
+                recentTurns.forEach(turn => {
+                    messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
+                    messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
+                });
+            }
+
+            messages.push({ role: "user", content: currentEnPrompt });
+            return messages;
+        }
+
+        // --- APIS CALL HELPERS ---
+        async function callGroqAPI(apiKey, messages) {
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, temperature: 0.5 })
+            });
+            if (res.status === 429) throw new Error("429_RATE_LIMIT");
+            if (!res.ok) throw new Error(`HTTP_${res.status}`);
+            const d = await res.json();
+            return d.choices[0].message.content;
+        }
+
+        async function callGeminiAPI(apiKey, messages) {
+            const systemInst = messages.find(m => m.role === "system");
+            const contents = messages.filter(m => m.role !== "system").map(m => ({
+                role: m.role === "assistant" ? "model" : "user",
+                parts: [{ text: m.content }]
+            }));
+
+            const body = {
+                contents: contents,
+                ...(systemInst ? { systemInstruction: { parts: [{ text: systemInst.content }] } } : {})
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(`GEMINI_HTTP_${res.status}`);
+            const data = await res.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        async function callOpenRouterAPI(apiKey, messages) {
+            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: JSON.stringify({ model: "google/gemini-2.5-flash:free", messages: messages })
+            });
+            if (!res.ok) throw new Error(`OPENROUTER_HTTP_${res.status}`);
+            const d = await res.json();
+            return d.choices[0].message.content;
+        }
+
+        async function callPollinationsAPI(messages) {
+            let fullPromptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPromptText)}`);
+            if (!res.ok) throw new Error(`POLLINATIONS_HTTP_${res.status}`);
+            return await res.text();
+        }
+
+        // --- AUTOMATIKUS FAILOVER KASZKÁD ENGINE ---
+        async function executeSmartFailoverPipeline(turns, currentEnPrompt) {
+            const groqKey = localStorage.getItem("GROQ_KEY");
+            const geminiKey = localStorage.getItem("GEMINI_KEY");
+            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
+
+            let forceCompress = false;
+
+            // 1. TIER: GROQ (Elsődleges)
+            if (groqKey) {
+                try {
+                    addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
+                    const messages = buildMessageArray(turns, currentEnPrompt, false);
+                    const responseEn = await callGroqAPI(groqKey, messages);
+                    return { responseEn, modelUsed: "Groq (Llama 3.3)" };
+                } catch (err) {
+                    addLog("WARN", `Groq API korlát/hiba (${err.message}). Tömörítés & Failover indítása...`);
+                    forceCompress = true; // A tartalék modelleknek már tömörített előzmény megy
+                }
+            }
+
+            // 2. TIER: GEMINI 1.5 FLASH (Failover 1)
+            if (geminiKey) {
+                try {
+                    addLog("INFO", "Failover 1: Gemini 1.5 Flash (Tömörített előzménnyel)...");
+                    const messages = buildMessageArray(turns, currentEnPrompt, true);
+                    const responseEn = await callGeminiAPI(geminiKey, messages);
+                    return { responseEn, modelUsed: "Gemini 1.5 Flash (Failover)" };
+                } catch (err) {
+                    addLog("WARN", `Gemini API hiba (${err.message}). Váltás OpenRouter-re...`);
+                    forceCompress = true;
+                }
+            }
+
+            // 3. TIER: OPENROUTER FREE (Failover 2)
+            if (openrouterKey) {
+                try {
+                    addLog("INFO", "Failover 2: OpenRouter Free (Tömörített előzménnyel)...");
+                    const messages = buildMessageArray(turns, currentEnPrompt, true);
+                    const responseEn = await callOpenRouterAPI(openrouterKey, messages);
+                    return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
+                } catch (err) {
+                    addLog("WARN", `OpenRouter API hiba (${err.message}). Váltás Pollinations-ra...`);
+                    forceCompress = true;
+                }
+            }
+
+            // 4. TIER: POLLINATIONS (Universal Keyless Failover)
+            addLog("INFO", "Failover 3: Pollinations Keyless (Tömörített előzménnyel)...");
+            const messages = buildMessageArray(turns, currentEnPrompt, true);
+            const responseEn = await callPollinationsAPI(messages);
+            return { responseEn, modelUsed: "Pollinations (Universal Failover)" };
+        }
+
+        // --- MAIN SEND ---
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
@@ -309,47 +454,8 @@
                 const enPrompt = await translateText(text, "hu", "en");
                 updateMessageEnPrompt(msgId, enPrompt);
 
-                // Teljes rövid távú memóriatömb összeállítása
-                let apiMessages = [
-                    { role: "system", content: "You are NEXUS AI, an expert software developer and analytical assistant. Maintain context across the conversation history." }
-                ];
-
-                if (currentTopic.turns && currentTopic.turns.length > 0) {
-                    currentTopic.turns.forEach(turn => {
-                        apiMessages.push({ role: "user", content: turn.userPromptEn || turn.userText });
-                        apiMessages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
-                    });
-                }
-
-                apiMessages.push({ role: "user", content: enPrompt });
-
-                addLog("INFO", `[MEMORY CHECK] Context turns sent to AI: ${currentTopic.turns ? currentTopic.turns.length : 0}`);
-
-                const groqKey = localStorage.getItem("GROQ_KEY");
-                let aiResponseEn = "";
-                let modelUsed = "";
-
-                if (groqKey) {
-                    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                        body: JSON.stringify({
-                            model: "llama-3.3-70b-versatile",
-                            messages: apiMessages,
-                            temperature: 0.5
-                        })
-                    });
-                    if (!res.ok) throw new Error(`Groq API hiba (${res.status})`);
-                    const d = await res.json();
-                    aiResponseEn = d.choices[0].message.content;
-                    modelUsed = "Groq (Llama 3.3)";
-                } else {
-                    let fullPromptText = apiMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-                    const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPromptText)}`);
-                    if (!res.ok) throw new Error(`Pollinations hiba (${res.status})`);
-                    aiResponseEn = await res.text();
-                    modelUsed = "Pollinations (Keyless)";
-                }
+                // Kaszkád hívás futtatása tömörített memóriával és automata failoverrel
+                const { responseEn: aiResponseEn, modelUsed } = await executeSmartFailoverPipeline(currentTopic.turns, enPrompt);
 
                 const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
                 appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
@@ -368,8 +474,8 @@
                 await refreshRecentTopicsList();
 
             } catch (e) {
-                addLog("ERROR", "API Hiba", e.message);
-                appendMessage("Rendszer Hiba", e.message, null, null, true);
+                addLog("ERROR", "Összes AI modell válaszképtelen", e.message);
+                appendMessage("Rendszer Hiba", "Minden AI csatorna elérhetetlen: " + e.message, null, null, true);
             }
         }
 
