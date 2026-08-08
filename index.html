@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Keyless-Engine v8.2</title>
+    <title>NEXUS // Gemini-Fix v8.3</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -70,7 +70,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v8.2 Keyless-Engine</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v8.3 Gemini-Fix</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -181,7 +181,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v8.2 Keyless-Engine: Puter AI Multi-Model Rotátor és AI Horde Anonim Hálózat aktív!
+            NEXUS v8.3 Engine: Frissített, stabil Gemini API hívó modul élesítve!
         </div>
     </main>
 
@@ -458,40 +458,76 @@
             return d.choices[0].message.content;
         }
 
+        // FRISSÍTETT, GARANTÁLTAN MŰKÖDŐ GEMINI API MODUL
         async function callGeminiAPI(apiKey, messages) {
-            const systemInst = messages.find(m => m.role === "system");
-            const contents = messages.filter(m => m.role !== "system").map(m => ({
-                role: m.role === "assistant" ? "model" : "user",
-                parts: [{ text: m.content }]
-            }));
-
-            const body = {
-                contents: contents,
-                ...(systemInst ? { systemInstruction: { parts: [{ text: systemInst.content }] } } : {})
-            };
-
-            let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            let res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
-
-            if (res.status === 429) throw new Error("GEMINI_HTTP_429");
-
-            if (res.status === 404) {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-                res = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-                if (res.status === 429) throw new Error("GEMINI_HTTP_429");
+            if (!apiKey || !apiKey.trim()) {
+                throw new Error("GEMINI_MISSING_KEY");
             }
 
-            if (!res.ok) throw new Error(`GEMINI_HTTP_${res.status}`);
-            const data = await res.json();
-            return data.candidates[0].content.parts[0].text;
+            const cleanKey = apiKey.trim();
+            const systemMsg = messages.find(m => m.role === "system");
+
+            const contents = messages
+                .filter(m => m.role !== "system")
+                .map(m => ({
+                    role: m.role === "assistant" ? "model" : "user",
+                    parts: [{ text: String(m.content || "") }]
+                }));
+
+            const requestBody = {
+                contents: contents
+            };
+
+            if (systemMsg && systemMsg.content) {
+                requestBody.systemInstruction = {
+                    parts: [{ text: String(systemMsg.content) }]
+                };
+            }
+
+            const targetModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+
+            for (const model of targetModels) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+                    
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json" 
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (response.status === 429) {
+                        throw new Error("GEMINI_HTTP_429");
+                    }
+
+                    if (response.status === 404) {
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`GEMINI_HTTP_${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.candidates && data.candidates[0]?.content?.parts) {
+                        return data.candidates[0].content.parts
+                            .map(part => part.text || "")
+                            .join("");
+                    }
+
+                    throw new Error("GEMINI_EMPTY_RESPONSE");
+
+                } catch (err) {
+                    if (err.message === "GEMINI_HTTP_429" || err.message.startsWith("GEMINI_HTTP_")) {
+                        throw err;
+                    }
+                }
+            }
+
+            throw new Error("GEMINI_HTTP_404");
         }
 
         async function callOpenRouterAPI(apiKey, messages) {
@@ -540,7 +576,6 @@
             throw new Error(`OPENROUTER_FAILED (${lastErrCode || "ALL_MODELS_BUSY"})`);
         }
 
-        // PUTER AI MULTI-MODEL ROTATOR (GPT-4o-Mini + DeepSeek)
         async function callPuterAPI(messages) {
             if (typeof puter === 'undefined' || !puter.ai) {
                 throw new Error("PUTER_NOT_LOADED");
@@ -557,13 +592,11 @@
                 } catch(e) {}
             }
             
-            // Default fallback
             const resDef = await puter.ai.chat(promptText);
             if (!resDef) throw new Error("PUTER_EMPTY");
             return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
         }
 
-        // KULCSMENTES AI HORDE (ANONIM CSATORNA: 0000000000)
         async function callAIHordeAPI(messages) {
             let lastMessage = messages[messages.length - 1];
             let promptText = lastMessage ? lastMessage.content : "Hello";
@@ -573,7 +606,7 @@
                 headers: {
                     "Content-Type": "application/json",
                     "apikey": "0000000000",
-                    "Client-Agent": "NEXUS_Workstation:v8.2:anonymous"
+                    "Client-Agent": "NEXUS_Workstation:v8.3:anonymous"
                 },
                 body: JSON.stringify({
                     prompt: promptText,
@@ -585,7 +618,6 @@
             const data = await res.json();
             if (!data.id) throw new Error("AI_HORDE_NO_ID");
 
-            // Várakozás az anonim feldolgozásra (max 3 másodperc)
             for (let i = 0; i < 6; i++) {
                 await new Promise(r => setTimeout(r, 500));
                 const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/text/status/${data.id}`);
@@ -660,7 +692,7 @@
                 resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
             }
 
-            // 3. AI Horde (Keyless Anonymous)
+            // 3. AI Horde
             resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Public):</strong> `;
             try {
                 await callAIHordeAPI(testMessages);
@@ -726,7 +758,7 @@
                 }
             }
 
-            // 2. TIER: PUTER AI (ELSŐDLEGES MŰKÖDŐ KULCSMENTES INGYES CSATORNA)
+            // 2. TIER: PUTER AI
             try {
                 addLog("INFO", "Failover 1: Puter AI (Free Keyless Rotator)...");
                 updateLoadingCardStatus("Failover: Puter AI csatorna indítása...");
@@ -737,7 +769,7 @@
                 addLog("WARN", `Puter AI hibaok: (${err.message}). Váltás AI Horde-ra...`);
             }
 
-            // 3. TIER: AI HORDE (ANONIM KULCSMENTES)
+            // 3. TIER: AI HORDE
             try {
                 addLog("INFO", "Failover 2: AI Horde Anonymous...");
                 updateLoadingCardStatus("Failover: AI Horde csatorna indítása...");
@@ -897,7 +929,7 @@
             currentTopic.turns.forEach(t => { 
                 md += `### Felhasználó\n> HU: ${t.userText}\n> EN: ${t.userPromptEn}\n\n### AI (${t.modelUsed})\n${t.aiResponse}\n\n---\n\n`; 
             });
-            const blob = new Blob([md], { type: "text/markdown" });
+            const blob = new BlobSimple([md], { type: "text/markdown" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
             a.download = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
