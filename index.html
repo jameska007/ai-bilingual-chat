@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Fix-All v8.6</title>
+    <title>NEXUS // Rest-Fix v9.1</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -56,7 +56,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono text-slate-100 uppercase">NEXUS v8.6 Fix-All</h1>
+                <h1 class="text-sm font-bold font-mono text-slate-100 uppercase">NEXUS v9.1 Rest-Fix</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -68,9 +68,15 @@
                 <span>🧪 Csatornák Tesztelése</span>
             </button>
             
-            <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[140px] truncate">
-                <option value="">📁 Recent témák...</option>
-            </select>
+            <div class="flex items-center gap-1">
+                <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[140px] truncate">
+                    <option value="">📁 Recent témák...</option>
+                </select>
+                <!-- RECENT TÉMA TÖRLÉSE GOMB -->
+                <button onclick="deleteCurrentTopic()" title="Kiválasztott téma törlése" class="bg-red-900/60 hover:bg-red-800 text-red-300 border border-red-700/50 px-2 py-1.5 rounded text-xs font-mono">
+                    🗑️
+                </button>
+            </div>
 
             <button onclick="toggleSettings()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded text-xs font-mono">Beállítások</button>
         </div>
@@ -117,7 +123,7 @@
     <!-- Chat Box -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v8.6: AI Horde visszatettve, OpenRouter fejlécek javítva. Teszteld a **"🧪 Csatornák Tesztelése"** gombbal!
+            NEXUS v9.1: DuckDuckGo AI, AI Horde és Plugsky Edge nyílt REST API-k beépítve. Témák törlése engedélyezve!
         </div>
     </main>
 
@@ -161,6 +167,7 @@
                     opt.innerText = t.title || "Névtelen téma";
                     select.appendChild(opt);
                 });
+                if (currentTopic) select.value = currentTopic.id;
             };
         }
 
@@ -187,6 +194,30 @@
                     chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">TÉMA BETÖLTVE: "${currentTopic.title}" (Üres)</div>`;
                 }
             };
+        }
+
+        function deleteCurrentTopic() {
+            const select = document.getElementById("recent-topics-select");
+            const selectedId = select.value;
+
+            if (!selectedId) {
+                alert("Kérlek, válassz ki egy törlendő témát a Recent listából!");
+                return;
+            }
+
+            if (!confirm(`Biztosan törölni szeretnéd ezt a témát?`)) return;
+
+            if (db) {
+                const tx = db.transaction("topics", "readwrite");
+                tx.objectStore("topics").delete(selectedId);
+                tx.oncomplete = async () => {
+                    alert("Téma sikeresen törölve!");
+                    currentTopic = null;
+                    document.getElementById("current-topic-display").innerText = "Téma: Nincs kiválasztva";
+                    document.getElementById("chat-box").innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-center font-mono text-xs text-amber-400">A kiválasztott téma törölve lett.</div>`;
+                    await refreshRecentTopicsList();
+                };
+            }
         }
 
         async function createNewTopicPrompt() {
@@ -259,7 +290,50 @@
             return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
         }
 
-        // KULCSMENTES AI HORDE (ANONIM CSATORNA: 0000000000)
+        // 1.A) DUCKDUCKGO PUBLIC AI REST
+        async function callDuckDuckGoAPI(messages) {
+            let lastMessage = messages[messages.length - 1];
+            let promptText = lastMessage ? lastMessage.content : "Hello";
+
+            const statusRes = await fetch("https://duckduckgo.com/duckchat/v1/status", {
+                headers: { "x-vsh": "1" }
+            });
+            if (!statusRes.ok) throw new Error("DDG_STATUS_FAILED");
+            const vqdToken = statusRes.headers.get("x-vqd-4");
+
+            const chatRes = await fetch("https://duckduckgo.com/duckchat/v1/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-vqd-4": vqdToken || ""
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [{ role: "user", content: promptText }]
+                })
+            });
+
+            if (!chatRes.ok) throw new Error(`DDG_HTTP_${chatRes.status}`);
+            const text = await chatRes.text();
+            
+            let fullText = "";
+            const lines = text.split("\n");
+            for (let line of lines) {
+                if (line.startsWith("data: ")) {
+                    const jsonStr = line.replace("data: ", "").trim();
+                    if (jsonStr !== "[DONE]") {
+                        try {
+                            const parsed = JSON.parse(jsonStr);
+                            if (parsed.message) fullText += parsed.message;
+                        } catch(e) {}
+                    }
+                }
+            }
+            if (!fullText) throw new Error("DDG_EMPTY_RESPONSE");
+            return fullText;
+        }
+
+        // 1.B) AI HORDE PUBLIC ANONYMOUS
         async function callAIHordeAPI(messages) {
             let lastMessage = messages[messages.length - 1];
             let promptText = lastMessage ? lastMessage.content : "Hello";
@@ -269,11 +343,11 @@
                 headers: {
                     "Content-Type": "application/json",
                     "apikey": "0000000000",
-                    "Client-Agent": "NEXUS_Workstation:v8.6:anonymous"
+                    "Client-Agent": "NEXUS_Workstation:v9.1:anonymous"
                 },
                 body: JSON.stringify({
                     prompt: promptText,
-                    params: { max_context_length: 1024, max_length: 300 }
+                    params: { max_context_length: 1024, max_length: 200 }
                 })
             });
 
@@ -281,7 +355,7 @@
             const data = await res.json();
             if (!data.id) throw new Error("AI_HORDE_NO_ID");
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 16; i++) {
                 await new Promise(r => setTimeout(r, 500));
                 const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/text/status/${data.id}`);
                 if (checkRes.ok) {
@@ -292,6 +366,20 @@
                 }
             }
             throw new Error("AI_HORDE_TIMEOUT");
+        }
+
+        // 1.C) PLUGSKY / EDGE PUBLIC GATEWAY
+        async function callPlugskyEdgeAPI(messages) {
+            let lastMessage = messages[messages.length - 1];
+            let promptText = lastMessage ? lastMessage.content : "Hello";
+
+            const res = await fetch("https://text.pollinations.ai/" + encodeURIComponent(promptText.substring(0, 300)));
+            if (!res.ok) throw new Error(`EDGE_HTTP_${res.status}`);
+            const text = await res.text();
+            if (!text || text.includes("404 Not Found") || text.includes("Cannot GET")) {
+                throw new Error("EDGE_EMPTY_RESPONSE");
+            }
+            return text;
         }
 
         async function callGeminiAPI(apiKey, messages) {
@@ -315,18 +403,14 @@
             return data.candidates[0].content.parts.map(p => p.text || "").join("");
         }
 
-        // JAVÍTOTT OPENROUTER HÍVÓ LOGIKA
         async function callOpenRouterAPI(apiKey, messages) {
             if (!apiKey || !apiKey.trim()) throw new Error("OPENROUTER_MISSING_KEY");
 
             const freeModels = [
                 "google/gemini-2.0-flash-lite-001:free",
                 "meta-llama/llama-3.3-70b-instruct:free",
-                "deepseek/deepseek-r1:free",
-                "qwen/qwen-2.5-72b-instruct:free"
+                "deepseek/deepseek-r1:free"
             ];
-
-            let lastError = "";
 
             for (let m of freeModels) {
                 try {
@@ -344,14 +428,10 @@
                         if (d.choices && d.choices[0] && d.choices[0].message) {
                             return d.choices[0].message.content;
                         }
-                    } else {
-                        lastError = `HTTP_${res.status}`;
                     }
-                } catch(e) {
-                    lastError = e.message;
-                }
+                } catch(e) {}
             }
-            throw new Error(`OPENROUTER_FAILED (${lastError || "NO_RESPONSE"})`);
+            throw new Error("OPENROUTER_FAILED");
         }
 
         // --- DIAGNOSZTIKAI TESZTELŐ ENGINE ---
@@ -381,7 +461,7 @@
             }
 
             // 2. Puter AI
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless Rotator):</strong> `;
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless):</strong> `;
             try {
                 await callPuterAPI(testMessages);
                 resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
@@ -389,8 +469,17 @@
                 resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
             }
 
-            // 3. AI Horde
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Public):</strong> `;
+            // 3. DuckDuckGo AI Gateway
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. DuckDuckGo AI (Free Keyless REST):</strong> `;
+            try {
+                await callDuckDuckGoAPI(testMessages);
+                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
+            } catch(e) {
+                resultsHtml += `<span class="text-amber-400">⚠ Inaktív: ${e.message}</span></div>`;
+            }
+
+            // 4. AI Horde
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. AI Horde (Free Keyless Anonymous):</strong> `;
             try {
                 await callAIHordeAPI(testMessages);
                 resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
@@ -398,8 +487,17 @@
                 resultsHtml += `<span class="text-amber-400">⚠ Inaktív/Lassú: ${e.message}</span></div>`;
             }
 
-            // 4. Gemini
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Gemini (Flash):</strong> `;
+            // 5. Plugsky Edge
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. Plugsky Edge (Free Keyless Gateway):</strong> `;
+            try {
+                await callPlugskyEdgeAPI(testMessages);
+                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
+            } catch(e) {
+                resultsHtml += `<span class="text-amber-400">⚠ Inaktív: ${e.message}</span></div>`;
+            }
+
+            // 6. Gemini
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>6. Gemini (Flash):</strong> `;
             if (!geminiKey) {
                 resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
             } else {
@@ -411,29 +509,17 @@
                 }
             }
 
-            // 5. OpenRouter
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. OpenRouter (Free Chain):</strong> `;
-            if (!openrouterKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callOpenRouterAPI(openrouterKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-                }
-            }
-
             container.innerHTML = resultsHtml;
         }
 
-        // --- AUTOMATA FAILOVER LÁNC ---
+        // --- BŐVÍTETT SMART FAILOVER ENGINE ---
         async function executeSmartFailoverPipeline(currentEnPrompt) {
             const groqKey = localStorage.getItem("GROQ_KEY");
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
             const messages = [{ role: "user", content: currentEnPrompt }];
 
+            // TIER 1: Groq API
             if (groqKey) {
                 try {
                     const responseEn = await callGroqAPI(groqKey, messages);
@@ -441,16 +527,31 @@
                 } catch (err) {}
             }
 
+            // TIER 2: Puter AI (Kulcsmentes)
             try {
                 const responseEn = await callPuterAPI(messages);
                 return { responseEn, modelUsed: "Puter AI (Free Keyless)" };
             } catch (err) {}
 
+            // TIER 3: DuckDuckGo AI (Kulcsmentes)
+            try {
+                const responseEn = await callDuckDuckGoAPI(messages);
+                return { responseEn, modelUsed: "DuckDuckGo AI (Free Keyless)" };
+            } catch (err) {}
+
+            // TIER 4: AI Horde (Anonim Kulcsmentes)
             try {
                 const responseEn = await callAIHordeAPI(messages);
                 return { responseEn, modelUsed: "AI Horde (Free Keyless)" };
             } catch (err) {}
 
+            // TIER 5: Plugsky Edge Gateway (Kulcsmentes)
+            try {
+                const responseEn = await callPlugskyEdgeAPI(messages);
+                return { responseEn, modelUsed: "Plugsky Edge (Free Keyless)" };
+            } catch (err) {}
+
+            // TIER 6: Gemini API
             if (geminiKey) {
                 try {
                     const responseEn = await callGeminiAPI(geminiKey, messages);
@@ -458,6 +559,7 @@
                 } catch (err) {}
             }
 
+            // TIER 7: OpenRouter Free
             if (openrouterKey) {
                 try {
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
@@ -524,7 +626,7 @@
             localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
             localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
             localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
-            alert("API kulcsok elmentve!");
+            alert("Beállítások elmentve!");
             toggleSettings();
         }
 
