@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // API-Fix v7.5</title>
+    <title>NEXUS // Engine-Optimizer v7.6</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -70,7 +70,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.5 API-Fix</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.6 Optimizer</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -140,7 +140,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v7.5 API-Fix: Gemini 2.0 Flash és OpenRouter Auto frissítve. Futasd le a tesztet a **"🧪 Csatornák Tesztelése"** gombbal!
+            NEXUS v7.6 Engine: OpenRouter ingyenes modellazonosító rögzítve. Futtasd le a frissített tesztet a **"🧪 Csatornák Tesztelése"** gombbal!
         </div>
     </main>
 
@@ -397,13 +397,12 @@
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
                 body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, temperature: 0.5 })
             });
-            if (res.status === 429) throw new Error("429_RATE_LIMIT");
+            if (res.status === 429) throw new Error("GROQ_HTTP_429");
             if (!res.ok) throw new Error(`GROQ_HTTP_${res.status}`);
             const d = await res.json();
             return d.choices[0].message.content;
         }
 
-        // JAVÍTOTT GEMINI DUAL-MODEL ENDPOINT (1.5-FLASH + 2.0-FLASH FALLBACK)
         async function callGeminiAPI(apiKey, messages) {
             const systemInst = messages.find(m => m.role === "system");
             const contents = messages.filter(m => m.role !== "system").map(m => ({
@@ -416,15 +415,17 @@
                 ...(systemInst ? { systemInstruction: { parts: [{ text: systemInst.content }] } } : {})
             };
 
-            let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             let res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
             });
 
+            if (res.status === 429) throw new Error("GEMINI_HTTP_429");
+
             if (res.status === 404) {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -437,19 +438,28 @@
             return data.candidates[0].content.parts[0].text;
         }
 
-        // JAVÍTOTT OPENROUTER DINAMIKUS MODELL (openrouter/auto)
+        // OPENROUTER FIX: GARANTÁLTAN INGYENES LLAMA-3.3 MODEL + FEJLÉCEK (402 FIX)
         async function callOpenRouterAPI(apiKey, messages) {
             const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: "openrouter/auto", messages: messages })
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${apiKey}`,
+                    "HTTP-Referer": window.location.href || "https://nexus-workstation.local",
+                    "X-Title": "NEXUS Workstation"
+                },
+                body: JSON.stringify({ 
+                    model: "meta-llama/llama-3.3-70b-instruct:free", 
+                    messages: messages 
+                })
             });
+            if (res.status === 402) throw new Error("OPENROUTER_HTTP_402");
             if (!res.ok) throw new Error(`OPENROUTER_HTTP_${res.status}`);
             const d = await res.json();
             return d.choices[0].message.content;
         }
 
-        // PUTER AI ENGINE (GPT-4o-Mini)
+        // PUTER AI ENGINE (GPT-4o-Mini - 100% INGYENES)
         async function callPuterAPI(messages) {
             if (typeof puter === 'undefined' || !puter.ai) {
                 throw new Error("PUTER_NOT_LOADED");
@@ -468,7 +478,7 @@
                 promptText = "Hello";
             }
             
-            const cleanPrompt = encodeURIComponent(promptText.trim().substring(0, 500));
+            const cleanPrompt = encodeURIComponent(promptText.trim().substring(0, 300));
             const url = `https://text.pollinations.ai/${cleanPrompt}`;
             
             const res = await fetch(url);
@@ -512,11 +522,11 @@
                     await callGeminiAPI(geminiKey, testMessages);
                     resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
                 } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
+                    resultsHtml += `<span class="text-amber-400">⚠ Értesítés: ${e.message} (429 esetén automata failover indul)</span></div>`;
                 }
             }
 
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. OpenRouter (Auto):</strong> `;
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. OpenRouter (Free Llama 3.3):</strong> `;
             if (!openrouterKey) {
                 resultsHtml += `<span class="text-amber-400">Nincs API kulcs.</span></div>`;
             } else {
@@ -583,7 +593,7 @@
 
             if (openrouterKey) {
                 try {
-                    addLog("INFO", "Failover 2: OpenRouter Free...");
+                    addLog("INFO", "Failover 2: OpenRouter Free Llama...");
                     updateLoadingCardStatus("Failover: OpenRouter csatorna indítása...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
