@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Fix-402 v6.2</title>
+    <title>NEXUS // Diagnostic v7.0</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -59,14 +59,20 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.2 Fix-402</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.0 Diagnostic</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
         <div class="flex gap-2 flex-wrap items-center">
             <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
+
+            <!-- HIBAKERESŐ TESZT GOMB -->
+            <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1">
+                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                <span>🧪 Csatornák Tesztelése</span>
+            </button>
             
-            <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[150px] truncate">
+            <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[140px] truncate">
                 <option value="">📁 Recent témák...</option>
             </select>
 
@@ -84,12 +90,32 @@
             <input type="password" id="openrouter-key" placeholder="OpenRouter API Key (Failover 2)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
         </div>
         <div class="flex flex-wrap gap-2 pt-2">
+            <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white text-xs p-2 rounded font-mono font-semibold">
+                🧪 AI Csatornák Állapotfelmérése (Diagnostics)
+            </button>
             <button onclick="initLocalTranslators()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs p-2 rounded font-mono">
                 📁 Helyi Fordító Letöltése (ONNX WASM)
             </button>
             <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono">API Kulcsok Mentése</button>
         </div>
         <div id="load-progress" class="text-[11px] text-cyan-400 font-mono italic">Kész az inicializálásra.</div>
+    </div>
+
+    <!-- HIBAKERESŐ ÉS TEST RESULTS MODAL -->
+    <div id="health-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md p-4 z-50 overflow-y-auto flex items-center justify-center">
+        <div class="bg-cyber-900 border border-slate-800 w-full max-w-3xl rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2 text-cyan-400 font-mono font-bold text-sm">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                    <span>AI CSATORNÁK DIAGNOSZTIKAI TESZTJE</span>
+                </div>
+                <button onclick="toggleHealthModal()" class="text-slate-400 hover:text-white text-xs bg-slate-800 px-3 py-1.5 rounded font-mono">Bezárás</button>
+            </div>
+            
+            <div id="health-results-container" class="space-y-2 font-mono text-xs">
+                <div class="text-slate-400 italic">Tesztelés indítása...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Hibanapló Modal -->
@@ -104,7 +130,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            HTTP 402 hiba javítva! Direct Google GTX fordító és ingyenes Pollinations Mistral modell aktív.
+            NEXUS v7.0 Diagnostic Engine: Kattints a **"🧪 Csatornák Tesztelése"** gombra az API kapcsolatok azonnali ellenőrzéséhez!
         </div>
     </main>
 
@@ -233,9 +259,7 @@
             }
         }
 
-        // --- BIZTONSÁGOS 100% INGYES FORDÍTÓ ENGINE (WASM -> Direct Google GTX) ---
         async function translateText(text, fromLang, toLang) {
-            // 1. Próbálkozás helyi ONNX WASM modellel (ha be van töltve)
             try {
                 if (fromLang === "hu" && toLang === "en" && translatorHuEn) {
                     const res = await translatorHuEn(text);
@@ -247,7 +271,6 @@
                 }
             } catch (e) {}
 
-            // 2. Direct Google GTX API (Azonnali, kulcsmentes, CORS-nyitott, sosem dob 402-t)
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
                 const res = await fetch(url);
@@ -255,15 +278,10 @@
                     const data = await res.json();
                     if (data && data[0]) {
                         const translated = data[0].map(item => item[0]).join("");
-                        if (translated) {
-                            addLog("SUCCESS", `Fordítás elvégezve Google GTX-szel (${fromLang}->${toLang}).`);
-                            return translated;
-                        }
+                        if (translated) return translated;
                     }
                 }
-            } catch (e) {
-                addLog("WARN", "Google GTX fordítási hiba, eredeti szöveg megtartása.", e.message);
-            }
+            } catch (e) {}
 
             return text;
         }
@@ -311,6 +329,7 @@
             return messages;
         }
 
+        // --- API CALL ENGINE ---
         async function callGroqAPI(apiKey, messages) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -318,7 +337,7 @@
                 body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages, temperature: 0.5 })
             });
             if (res.status === 429) throw new Error("429_RATE_LIMIT");
-            if (!res.ok) throw new Error(`HTTP_${res.status}`);
+            if (!res.ok) throw new Error(`GROQ_HTTP_${res.status}`);
             const d = await res.json();
             return d.choices[0].message.content;
         }
@@ -357,9 +376,9 @@
             return d.choices[0].message.content;
         }
 
-        // POLLINATIONS FREE MODEL (MISTRAL / QWEN - SOSEM DOB HTTP 402-T)
+        // JAVÍTOTT POLLINATIONS OPENAI-COMPATIBLE CSATORNA
         async function callPollinationsAPI(messages) {
-            const res = await fetch("https://text.pollinations.ai/", {
+            const res = await fetch("https://text.pollinations.ai/openai", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -367,8 +386,85 @@
                     model: "mistral"
                 })
             });
-            if (!res.ok) throw new Error(`POLLINATIONS_HTTP_${res.status}`);
+            
+            if (!res.ok) {
+                // Secondary Fallback GET
+                let promptStr = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+                const resGet = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptStr.substring(0, 1500))}?model=mistral`);
+                if (!resGet.ok) throw new Error(`POLLINATIONS_HTTP_${resGet.status}`);
+                return await resGet.text();
+            }
+
+            const data = await res.json();
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content;
+            }
             return await res.text();
+        }
+
+        // --- DIAGNOSZTIKAI ÉS HIBAKERESŐ ELEMZŐ MODUL ---
+        async function runHealthCheck() {
+            toggleHealthModal(true);
+            const container = document.getElementById("health-results-container");
+            container.innerHTML = `<div class="text-cyan-400 font-mono italic animate-pulse">Tesztelés indítása az összes csatornán...</div>`;
+
+            const testMessages = [{ role: "user", content: "Reply with 'OK'" }];
+            const groqKey = localStorage.getItem("GROQ_KEY");
+            const geminiKey = localStorage.getItem("GEMINI_KEY");
+            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
+
+            let resultsHtml = "";
+
+            // 1. Groq Teszt
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>1. Groq (Llama 3.3):</strong> `;
+            if (!groqKey) {
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+            } else {
+                try {
+                    await callGroqAPI(groqKey, testMessages);
+                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
+                } catch(e) {
+                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
+                }
+            }
+
+            // 2. Gemini Teszt
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Gemini (1.5 Flash):</strong> `;
+            if (!geminiKey) {
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+            } else {
+                try {
+                    await callGeminiAPI(geminiKey, testMessages);
+                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
+                } catch(e) {
+                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
+                }
+            }
+
+            // 3. OpenRouter Teszt
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. OpenRouter (Free):</strong> `;
+            if (!openrouterKey) {
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+            } else {
+                try {
+                    await callOpenRouterAPI(openrouterKey, testMessages);
+                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
+                } catch(e) {
+                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
+                }
+            }
+
+            // 4. Pollinations Teszt
+            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Pollinations (Free Fallback):</strong> `;
+            try {
+                await callPollinationsAPI(testMessages);
+                resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
+            } catch(e) {
+                resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
+            }
+
+            container.innerHTML = resultsHtml;
+            addLog("INFO", "Rendszerállapot teszt elvégezve.");
         }
 
         async function executeSmartFailoverPipeline(turns, currentEnPrompt) {
@@ -384,8 +480,10 @@
                     const responseEn = await callGroqAPI(groqKey, messages);
                     return { responseEn, modelUsed: "Groq (Llama 3.3)" };
                 } catch (err) {
-                    addLog("WARN", `Groq korlát/hiba (${err.message}). Tömörítés & Failover...`);
+                    addLog("WARN", `Groq hibaok: (${err.message}). Tömörítés & Failover...`);
                 }
+            } else {
+                addLog("INFO", "Groq kulcs hiányzik, ugrottunk a 2. Tierre.");
             }
 
             // 2. TIER: GEMINI 1.5 FLASH
@@ -396,7 +494,7 @@
                     const responseEn = await callGeminiAPI(geminiKey, messages);
                     return { responseEn, modelUsed: "Gemini 1.5 Flash (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `Gemini hiba (${err.message}). Váltás OpenRouter-re...`);
+                    addLog("WARN", `Gemini hibaok: (${err.message}). Váltás OpenRouter-re...`);
                 }
             }
 
@@ -408,11 +506,11 @@
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
                     return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `OpenRouter hiba (${err.message}). Váltás Pollinations Free-re...`);
+                    addLog("WARN", `OpenRouter hibaok: (${err.message}). Váltás Pollinations-ra...`);
                 }
             }
 
-            // 4. TIER: POLLINATIONS FREE (MISTRAL ENGINE)
+            // 4. TIER: POLLINATIONS FREE
             addLog("INFO", "Failover 3: Pollinations Free Mistral (Tömörített)...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
@@ -486,6 +584,11 @@
 
         function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
         function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
+        function toggleHealthModal(show = false) { 
+            const modal = document.getElementById("health-modal");
+            if (show) modal.classList.remove("hidden");
+            else modal.classList.add("hidden");
+        }
         
         function addLog(l, m, details = "") { 
             const container = document.getElementById("debug-log-container");
