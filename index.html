@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Smart-Failover v6.0</title>
+    <title>NEXUS // Resilient v6.1</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -59,7 +59,7 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.0 Smart-Failover</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v6.1 Resilient</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
@@ -104,7 +104,7 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v6.0 Engine: Token-limithiba (429) esetén a rendszer automatikusan tömöríti a csevegési előzményeket és átvált a tartalék modellre!
+            Pollinations JSON POST javítás élesítve. Hosszú előzmények esetén sem keletkezik többet HTTP 402 hiba.
         </div>
     </main>
 
@@ -269,7 +269,14 @@
             }
 
             try {
-                const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+                const res = await fetch("https://text.pollinations.ai/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        messages: [{ role: "user", content: prompt }],
+                        model: "openai"
+                    })
+                });
                 if (res.ok) {
                     const translated = (await res.text()).trim();
                     if (translated) return translated;
@@ -279,7 +286,6 @@
             return text;
         }
 
-        // --- KONTEXTUS TÖMMÖRÍTŐ ÉS MEMÓRIA ÉPÍTŐ ENGINE ---
         function buildMessageArray(turns, currentEnPrompt, forceCompression = false) {
             let messages = [
                 { 
@@ -293,14 +299,12 @@
                 return messages;
             }
 
-            // Ha nincs kényszerített tömörítés és kevés a kör (<=3), mehet a teljes szöveg
             if (!forceCompression && turns.length <= 3) {
                 turns.forEach(turn => {
                     messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
                     messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
                 });
             } else {
-                // TÖMMÖRÍTÉSI ALGORITMUS: A korábbi körök kivonatolása + utolsó 2 kör megtartása
                 const olderTurns = turns.slice(0, -2);
                 const recentTurns = turns.slice(-2);
 
@@ -309,14 +313,12 @@
                     olderTurns.forEach((t, idx) => {
                         const userQ = t.userPromptEn || t.userText;
                         const aiAns = t.aiResponseEn || t.aiResponse;
-                        // Rövidített kivonat a régebbi körökből
-                        summaryBlock += `- Turn ${idx + 1}: User asked: "${userQ.substring(0, 120)}...". AI solution/decision: "${aiAns.substring(0, 200)}..."\n`;
+                        summaryBlock += `- Turn ${idx + 1}: User asked: "${userQ.substring(0, 120)}...". AI solution: "${aiAns.substring(0, 200)}..."\n`;
                     });
                     
                     messages.push({ role: "system", content: summaryBlock });
                 }
 
-                // Az utolsó 2 kör változatlan formában bekerül a friss kontextusért
                 recentTurns.forEach(turn => {
                     messages.push({ role: "user", content: turn.userPromptEn || turn.userText });
                     messages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
@@ -327,7 +329,6 @@
             return messages;
         }
 
-        // --- APIS CALL HELPERS ---
         async function callGroqAPI(apiKey, messages) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -374,22 +375,26 @@
             return d.choices[0].message.content;
         }
 
+        // JAVÍTOTT POLLINATIONS POST CSATORNA (CORS & URL LENGTH FIX)
         async function callPollinationsAPI(messages) {
-            let fullPromptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-            const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPromptText)}`);
+            const res = await fetch("https://text.pollinations.ai/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: messages,
+                    model: "openai"
+                })
+            });
             if (!res.ok) throw new Error(`POLLINATIONS_HTTP_${res.status}`);
             return await res.text();
         }
 
-        // --- AUTOMATIKUS FAILOVER KASZKÁD ENGINE ---
         async function executeSmartFailoverPipeline(turns, currentEnPrompt) {
             const groqKey = localStorage.getItem("GROQ_KEY");
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            let forceCompress = false;
-
-            // 1. TIER: GROQ (Elsődleges)
+            // 1. TIER: GROQ
             if (groqKey) {
                 try {
                     addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
@@ -397,45 +402,41 @@
                     const responseEn = await callGroqAPI(groqKey, messages);
                     return { responseEn, modelUsed: "Groq (Llama 3.3)" };
                 } catch (err) {
-                    addLog("WARN", `Groq API korlát/hiba (${err.message}). Tömörítés & Failover indítása...`);
-                    forceCompress = true; // A tartalék modelleknek már tömörített előzmény megy
+                    addLog("WARN", `Groq korlát/hiba (${err.message}). Tömörítés & Failover...`);
                 }
             }
 
-            // 2. TIER: GEMINI 1.5 FLASH (Failover 1)
+            // 2. TIER: GEMINI 1.5 FLASH
             if (geminiKey) {
                 try {
-                    addLog("INFO", "Failover 1: Gemini 1.5 Flash (Tömörített előzménnyel)...");
+                    addLog("INFO", "Failover 1: Gemini 1.5 Flash (Tömörített)...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callGeminiAPI(geminiKey, messages);
                     return { responseEn, modelUsed: "Gemini 1.5 Flash (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `Gemini API hiba (${err.message}). Váltás OpenRouter-re...`);
-                    forceCompress = true;
+                    addLog("WARN", `Gemini hiba (${err.message}). Váltás OpenRouter-re...`);
                 }
             }
 
-            // 3. TIER: OPENROUTER FREE (Failover 2)
+            // 3. TIER: OPENROUTER FREE
             if (openrouterKey) {
                 try {
-                    addLog("INFO", "Failover 2: OpenRouter Free (Tömörített előzménnyel)...");
+                    addLog("INFO", "Failover 2: OpenRouter Free (Tömörített)...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
                     return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
                 } catch (err) {
-                    addLog("WARN", `OpenRouter API hiba (${err.message}). Váltás Pollinations-ra...`);
-                    forceCompress = true;
+                    addLog("WARN", `OpenRouter hiba (${err.message}). Váltás Pollinations POST-ra...`);
                 }
             }
 
-            // 4. TIER: POLLINATIONS (Universal Keyless Failover)
-            addLog("INFO", "Failover 3: Pollinations Keyless (Tömörített előzménnyel)...");
+            // 4. TIER: POLLINATIONS POST
+            addLog("INFO", "Failover 3: Pollinations POST (Tömörített előzménnyel)...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
-            return { responseEn, modelUsed: "Pollinations (Universal Failover)" };
+            return { responseEn, modelUsed: "Pollinations POST (Failover)" };
         }
 
-        // --- MAIN SEND ---
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
@@ -454,7 +455,6 @@
                 const enPrompt = await translateText(text, "hu", "en");
                 updateMessageEnPrompt(msgId, enPrompt);
 
-                // Kaszkád hívás futtatása tömörített memóriával és automata failoverrel
                 const { responseEn: aiResponseEn, modelUsed } = await executeSmartFailoverPipeline(currentTopic.turns, enPrompt);
 
                 const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
