@@ -1,575 +1,373 @@
 <!DOCTYPE html>
-<html lang="hu" class="dark">
+<html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Operational v9.4</title>
-    
-    <meta name="color-scheme" content="dark">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://js.puter.com/v2/"></script>
-    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenRouter ingyenes modellek - Hibakereső</title>
     <style>
-        :root { color-scheme: dark !important; }
-        html, body { 
-            background-color: #090d16 !important; 
-            color: #f1f5f9 !important; 
-            height: 100%; 
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: #f6f8fa; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 1200px; width: 100%; }
+        h1 { font-size: 1.8rem; margin-bottom: 0.2rem; }
+        .sub { color: #555; margin-top: 0; margin-bottom: 1.5rem; }
+        .api-warning {
+            background: #fff3cd; border-left: 5px solid #ffc107;
+            padding: 10px 16px; border-radius: 6px; margin-bottom: 1.5rem;
         }
-        .hidden { display: none !important; }
-        .bg-grid { 
-            background-size: 30px 30px; 
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); 
+        .api-warning code { background: #e9ecef; padding: 2px 8px; border-radius: 4px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+        .btn {
+            background: #1f2937; color: #fff; border: none;
+            padding: 10px 24px; border-radius: 8px; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background 0.2s;
         }
-        
-        textarea, input, select {
-            background-color: #0f172a !important;
-            color: #ffffff !important;
-            border: 1px solid #334155 !important;
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            caret-color: #10b981 !important;
-            color-scheme: dark !important;
+        .btn:hover { background: #111827; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: #e5e7eb; color: #1f2937; }
+        .btn-secondary:hover { background: #d1d5db; }
+        .status {
+            padding: 10px 16px; border-radius: 6px; margin-bottom: 20px;
+            background: #eef2ff; border-left: 5px solid #4f46e5; font-weight: 500;
+            white-space: pre-wrap; word-break: break-word;
         }
-        
-        textarea::placeholder, input::placeholder {
-            color: #94a3b8 !important;
+        .status.error { background: #fee2e2; border-left-color: #dc2626; }
+        .status.success { background: #dcfce7; border-left-color: #16a34a; }
+        .model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+        .model-card {
+            background: #fff; border-radius: 12px; padding: 16px 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;
         }
-
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .model-card .provider { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; color: #6b7280; }
+        .model-card .name { font-size: 1.1rem; font-weight: 600; word-break: break-all; margin: 4px 0; }
+        .model-card .id { font-size: 0.8rem; color: #6b7280; font-family: monospace; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+        .model-card .test-result {
+            margin-top: 10px; padding: 10px 12px; border-radius: 6px;
+            background: #f9fafb; border: 1px solid #e5e7eb; font-size: 0.9rem;
+            max-height: 140px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
         }
-        .animate-pulse-fast {
-            animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .model-card .test-result.success { border-left: 4px solid #16a34a; }
+        .model-card .test-result.error { border-left: 4px solid #dc2626; }
+        .model-card .test-result.pending { border-left: 4px solid #f59e0b; color: #6b7280; }
+        .badge { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
+        .badge-free { background: #dcfce7; color: #15803d; }
+        .footer { margin-top: 32px; font-size: 0.85rem; color: #6b7280; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .debug-box {
+            background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px;
+            font-family: 'Courier New', monospace; font-size: 0.85rem;
+            max-height: 300px; overflow-y: auto; margin: 16px 0;
+            white-space: pre-wrap; word-break: break-all;
         }
     </style>
 </head>
-<body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased">
+<body>
+    <div class="container">
+        <h1>🔑 OpenRouter ingyenes modellek</h1>
+        <p class="sub">Hibakereső verzió – a konzolban (F12) részletes napló látható</p>
 
-    <!-- Fejléc -->
-    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center gap-2 flex-wrap">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center">
-                <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
-            </div>
-            <div>
-                <h1 class="text-sm font-bold font-mono text-slate-100 uppercase">NEXUS v9.4 Operational</h1>
-                <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
-            </div>
+        <div class="api-warning">
+            ⚠️ <strong>API-kulcs beállítása:</strong> 
+            A kód elején, a <code>OPENROUTER_API_KEY</code> változóba írd be a kulcsodat.
+            <br><br>
+            <strong>Ellenőrizd:</strong> A kulcsnak <code>sk-or-v1-</code> prefixszel kell kezdődnie!
+            <br>
+            🔗 <a href="https://openrouter.ai/keys" target="_blank">https://openrouter.ai/keys</a> - itt hozhatsz létre új kulcsot.
         </div>
-        <div class="flex gap-2 flex-wrap items-center">
-            <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold transition-all">Új téma</button>
 
-            <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1 transition-all">
-                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                <span>🧪 Csatornák Tesztelése</span>
-            </button>
-            
-            <div class="flex items-center gap-1">
-                <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[140px] truncate">
-                    <option value="">📁 Recent témák...</option>
-                </select>
-                <!-- RECENT TÉMA TÖRLÉSE GOMB -->
-                <button onclick="deleteCurrentTopic()" title="Kiválasztott téma törlése" class="bg-red-900/60 hover:bg-red-800 text-red-300 border border-red-700/50 px-2 py-1.5 rounded text-xs font-mono">
-                    🗑️
-                </button>
-            </div>
+        <div class="btn-group">
+            <button class="btn" id="btnFetch">📥 Modelllekérés</button>
+            <button class="btn btn-secondary" id="btnTestAll" disabled>▶️ Tesztelés</button>
+            <button class="btn btn-secondary" id="btnClear">🗑️ Törlés</button>
+            <button class="btn btn-secondary" id="btnDebugKey">🔍 Kulcs ellenőrzése</button>
+        </div>
 
-            <button onclick="toggleSettings()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded text-xs font-mono">Beállítások</button>
-        </div>
-    </header>
+        <div id="status" class="status">Kattints a <strong>„Modelllekérés”</strong> gombra.</div>
 
-    <!-- Beállítások Panel -->
-    <div id="settings-panel" class="hidden bg-cyber-900 p-4 space-y-3 border-b border-slate-800">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="text-[11px] font-mono text-emerald-400 font-semibold">Groq API Key</label>
-                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
-            </div>
-            <div>
-                <label class="text-[11px] font-mono text-cyan-400 font-semibold">Gemini API Key</label>
-                <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
-            </div>
-            <div>
-                <label class="text-[11px] font-mono text-purple-400 font-semibold">OpenRouter Key</label>
-                <input type="password" id="openrouter-key" placeholder="sk-or-v1-..." class="w-full border border-slate-800 rounded p-2 text-xs font-mono">
-            </div>
-        </div>
-        <div class="flex gap-2 pt-2 border-t border-slate-800">
-            <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono font-bold">API Kulcsok Mentése</button>
-        </div>
+        <div id="debugOutput" class="debug-box">📋 Itt jelennek meg a debug információk...</div>
+
+        <div id="modelContainer" class="model-grid"></div>
+        <div class="footer">Teszt szöveg: <em>„Mondj egy rövid, 5 szavas köszöntést magyarul!”</em></div>
     </div>
-
-    <!-- Health Diagnostics Modal -->
-    <div id="health-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md p-4 z-50 overflow-y-auto flex items-center justify-center">
-        <div class="bg-cyber-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-5 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2 text-cyan-400 font-mono font-bold text-sm">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                    <span>AI CSATORNÁK DIAGNOSZTIKAI TESZTJE</span>
-                </div>
-                <button onclick="toggleHealthModal(false)" class="text-slate-400 hover:text-white text-xs bg-slate-800 px-3 py-1.5 rounded font-mono">Bezárás</button>
-            </div>
-            
-            <div id="health-results-container" class="space-y-2 font-mono text-xs">
-                <div class="text-slate-400 italic">Tesztelés indítása...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Chat Box -->
-    <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v9.4: OpenRouter Free-Router frissítve. Mind az 5 csatorna tesztelése aktív!
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="p-4 bg-cyber-900 border-t border-slate-800">
-        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none"></textarea>
-        <button id="send-btn" onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all">Küldés</button>
-    </footer>
 
     <script>
-        lucide.createIcons();
-        let currentTopic = null, db = null;
+        // ============================================================
+        // 🔑 ÁLLÍTSD BE ITT A SAJÁT OPENROUTER API-KULCSODAT
+        // ============================================================
+        const OPENROUTER_API_KEY = 'YOUR_OPENROUTER_API_KEY'; // sk-or-v1-...
+        // ============================================================
 
-        // --- INDEXEDDB ENGINE ---
-        function initDB() {
-            const request = indexedDB.open("NEXUS_Workstation_DB", 1);
-            request.onupgradeneeded = (e) => {
-                const dbInstance = e.target.result;
-                if (!dbInstance.objectStoreNames.contains("topics")) {
-                    dbInstance.createObjectStore("topics", { keyPath: "id" });
-                }
-            };
-            request.onsuccess = (e) => {
-                db = e.target.result;
-                refreshRecentTopicsList();
-            };
+        // --- Globális állapot ---
+        let allModels = [];
+        let testResults = {};
+        let debugLogs = [];
+
+        const container = document.getElementById('modelContainer');
+        const statusEl = document.getElementById('status');
+        const debugEl = document.getElementById('debugOutput');
+        const btnFetch = document.getElementById('btnFetch');
+        const btnTestAll = document.getElementById('btnTestAll');
+        const btnClear = document.getElementById('btnClear');
+        const btnDebugKey = document.getElementById('btnDebugKey');
+
+        // --- Debug függvény ---
+        function debugLog(msg, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            const line = `[${timestamp}] ${prefix} ${msg}`;
+            debugLogs.push(line);
+            debugEl.textContent = debugLogs.join('\n');
+            debugEl.scrollTop = debugEl.scrollHeight;
+            console.log(msg);
         }
 
-        async function refreshRecentTopicsList() {
-            if (!db) return;
-            const tx = db.transaction("topics", "readonly");
-            const req = tx.objectStore("topics").getAll();
-            req.onsuccess = () => {
-                const select = document.getElementById("recent-topics-select");
-                select.innerHTML = '<option value="">📁 Recent témák...</option>';
-                const topics = req.result || [];
-                topics.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                topics.forEach(t => {
-                    const opt = document.createElement("option");
-                    opt.value = t.id;
-                    opt.innerText = t.title || "Névtelen téma";
-                    select.appendChild(opt);
-                });
-                if (currentTopic) select.value = currentTopic.id;
-            };
+        function setStatus(msg, type = '') {
+            statusEl.textContent = msg;
+            statusEl.className = 'status' + (type ? ' ' + type : '');
         }
 
-        async function switchTopic(id) {
-            if (!id || !db) return;
-            const tx = db.transaction("topics", "readonly");
-            const req = tx.objectStore("topics").get(id);
-            req.onsuccess = () => {
-                currentTopic = req.result;
-                if (!currentTopic) return;
-
-                document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
-                document.getElementById("recent-topics-select").value = id;
-                
-                const chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML = "";
-
-                if (currentTopic.turns && currentTopic.turns.length > 0) {
-                    currentTopic.turns.forEach(t => {
-                        appendMessage("Felhasználó", t.userText);
-                        appendMessage("NEXUS AI (" + (t.modelUsed || "AI") + ")", t.aiResponse);
-                    });
-                } else {
-                    chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">TÉMA BETÖLTVE: "${currentTopic.title}" (Üres)</div>`;
-                }
-            };
-        }
-
-        function deleteCurrentTopic() {
-            const select = document.getElementById("recent-topics-select");
-            const selectedId = select.value;
-
-            if (!selectedId) {
-                alert("Kérlek, válassz ki egy törlendő témát a Recent listából!");
+        function renderCards() {
+            if (!allModels.length) {
+                container.innerHTML = '<p style="grid-column:1/-1;color:#6b7280;text-align:center;padding:40px 0;">Nincs modell.</p>';
                 return;
             }
+            let html = '';
+            for (const m of allModels) {
+                const result = testResults[m.id] || { status: 'idle', message: '' };
+                let resultClass = 'test-result';
+                let resultText = '';
+                if (result.status === 'pending') { resultClass += ' pending'; resultText = '⏳ Tesztelés...'; }
+                else if (result.status === 'success') { resultClass += ' success'; resultText = '✅ ' + result.message; }
+                else if (result.status === 'error') { resultClass += ' error'; resultText = '❌ ' + result.message; }
+                else { resultText = '⏳ Még nem tesztelve'; }
 
-            if (!confirm(`Biztosan törölni szeretnéd ezt a témát?`)) return;
+                html += `
+                    <div class="model-card">
+                        <div class="flex-between">
+                            <span class="provider">${m.provider}</span>
+                            <span class="badge badge-free">INGYENES</span>
+                        </div>
+                        <div class="name">${m.displayName}</div>
+                        <div class="id">${m.id}</div>
+                        <div class="${resultClass}">${resultText}</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
 
-            if (db) {
-                const tx = db.transaction("topics", "readwrite");
-                tx.objectStore("topics").delete(selectedId);
-                tx.oncomplete = async () => {
-                    alert("Téma sikeresen törölve!");
-                    currentTopic = null;
-                    document.getElementById("current-topic-display").innerText = "Téma: Nincs kiválasztva";
-                    document.getElementById("chat-box").innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-center font-mono text-xs text-amber-400">A kiválasztott téma törölve lett.</div>`;
-                    await refreshRecentTopicsList();
-                };
+        // --- Kulcs ellenőrzése ---
+        function checkKey() {
+            debugLog('--- KULCS ELLENŐRZÉS ---');
+            const key = OPENROUTER_API_KEY;
+            if (!key || key === 'YOUR_OPENROUTER_API_KEY') {
+                debugLog('❌ NINCS BEÁLLÍTVA a kulcs!', 'error');
+                setStatus('❌ Nincs beállítva API-kulcs!', 'error');
+                return;
+            }
+            debugLog(`✅ Kulcs hossza: ${key.length} karakter`);
+            debugLog(`✅ Kulcs eleje: ${key.substring(0, 12)}...`);
+            debugLog(`✅ Kulcs vége: ...${key.substring(key.length - 8)}`);
+            
+            if (key.startsWith('sk-or-v1-')) {
+                debugLog('✅ Formátum helyes (sk-or-v1- prefix)', 'success');
+            } else if (key.startsWith('sk-')) {
+                debugLog('⚠️ Régi formátum (sk-). Az OpenRouter új kulcsai sk-or-v1- prefixszel kezdődnek!', 'error');
+                setStatus('⚠️ Régi kulcs formátum! Új kulcsot kell generálnod.', 'error');
+            } else {
+                debugLog('⚠️ Ismeretlen formátum. A kulcsnak sk-or-v1- prefixszel kell kezdődnie.', 'error');
+                setStatus('⚠️ Rossz kulcs formátum!', 'error');
             }
         }
 
-        async function createNewTopicPrompt() {
-            const title = prompt("Adj meg egy nevet az új témának:");
-            if (!title || !title.trim()) return;
-
-            currentTopic = { 
-                id: "topic_" + Date.now(), 
-                title: title.trim(), 
-                createdAt: new Date().toISOString(), 
-                turns: [] 
-            };
-
-            saveTopicToDB(currentTopic);
-            document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
-            
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"</div>`;
-            
-            await refreshRecentTopicsList();
-            document.getElementById("recent-topics-select").value = currentTopic.id;
-        }
-
-        function saveTopicToDB(topic) {
-            if (!db || !topic) return;
-            const tx = db.transaction("topics", "readwrite");
-            tx.objectStore("topics").put(topic);
-        }
-
-        // --- DIRECT FORDÍTÓ ENGINE ---
-        async function translateText(text, fromLang, toLang) {
-            try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data[0]) return data[0].map(item => item[0]).join("");
-                }
-            } catch (e) {}
-            return text;
-        }
-
-        // --- API CALL ENGINES ---
-        async function callGroqAPI(apiKey, messages) {
-            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, temperature: 0.5 })
-            });
-            if (res.status === 401) throw new Error("GROQ_HTTP_401");
-            if (res.status === 429) throw new Error("GROQ_HTTP_429");
-            if (!res.ok) throw new Error(`GROQ_HTTP_${res.status}`);
-            const d = await res.json();
-            return d.choices[0].message.content;
-        }
-
-        async function callPuterAPI(messages) {
-            if (typeof puter === 'undefined' || !puter.ai) throw new Error("PUTER_NOT_LOADED");
-            let promptText = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-            
-            const puterModels = ['gpt-4o-mini', 'deepseek-chat'];
-            for (let modelName of puterModels) {
-                try {
-                    const res = await puter.ai.chat(promptText, { model: modelName });
-                    if (res) return typeof res === 'string' ? res : (res.message?.content || res.toString());
-                } catch(e) {}
+        // --- OpenRouter modellek lekérése ---
+        async function fetchOpenRouterModels() {
+            debugLog('📥 Modelllekérés indítása...');
+            if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === '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') {
+                throw new Error('Az OpenRouter API-kulcs nincs beállítva!');
             }
-            const resDef = await puter.ai.chat(promptText);
-            if (!resDef) throw new Error("PUTER_EMPTY");
-            return typeof resDef === 'string' ? resDef : (resDef.message?.content || resDef.toString());
-        }
-
-        // AI HORDE PUBLIC ANONYMOUS CSATORNA
-        async function callAIHordeAPI(messages) {
-            let lastMessage = messages[messages.length - 1];
-            let promptText = lastMessage ? lastMessage.content : "Hello";
-
-            const res = await fetch("https://stablehorde.net/api/v2/generate/text/async", {
-                method: "POST",
+            
+            const url = 'https://openrouter.ai/api/v1/models';
+            debugLog(`🌐 Kérés: GET ${url}`);
+            
+            const resp = await fetch(url, {
                 headers: {
-                    "Content-Type": "application/json",
-                    "apikey": "0000000000",
-                    "Client-Agent": "NEXUS_Workstation:v9.4:anonymous"
-                },
-                body: JSON.stringify({
-                    prompt: promptText,
-                    params: { max_context_length: 1024, max_length: 200 }
-                })
+                    'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+                    'Content-Type': 'application/json'
+                }
             });
-
-            if (!res.ok) throw new Error(`AI_HORDE_HTTP_${res.status}`);
-            const data = await res.json();
-            if (!data.id) throw new Error("AI_HORDE_NO_ID");
-
-            for (let i = 0; i < 16; i++) {
-                await new Promise(r => setTimeout(r, 500));
-                const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/text/status/${data.id}`);
-                if (checkRes.ok) {
-                    const checkData = await checkRes.json();
-                    if (checkData.done && checkData.generations && checkData.generations[0]) {
-                        return checkData.generations[0].text;
-                    }
-                }
+            
+            debugLog(`📊 Válasz státusz: ${resp.status} ${resp.statusText}`);
+            
+            if (!resp.ok) {
+                const errText = await resp.text();
+                debugLog(`❌ Hiba válasz: ${errText}`, 'error');
+                throw new Error(`OpenRouter hiba (${resp.status}): ${errText}`);
             }
-            throw new Error("AI_HORDE_TIMEOUT");
+            
+            const data = await resp.json();
+            debugLog(`✅ ${data.data?.length || 0} modell érkezett`, 'success');
+            
+            const models = data.data || [];
+            const free = models
+                .filter(m => m.id && m.id.includes(':free'))
+                .map(m => ({
+                    id: m.id,
+                    provider: 'OpenRouter',
+                    displayName: m.name || m.id,
+                    isFree: true,
+                    raw: m
+                }));
+            
+            debugLog(`✅ ${free.length} ingyenes modell található`, 'success');
+            return free;
         }
 
-        async function callGeminiAPI(apiKey, messages) {
-            if (!apiKey || !apiKey.trim()) throw new Error("GEMINI_MISSING_KEY");
-            const cleanKey = apiKey.trim();
-
-            const contents = messages
-                .filter(m => m.role !== "system")
-                .map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: String(m.content || "") }] }));
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents })
-            });
-
-            if (response.status === 429) throw new Error("GEMINI_HTTP_429");
-            if (!response.ok) throw new Error(`GEMINI_HTTP_${response.status}`);
-
-            const data = await response.json();
-            return data.candidates[0].content.parts.map(p => p.text || "").join("");
+        // --- Összes modell lekérése ---
+        async function fetchAllModels() {
+            debugLog('=== MODELLLEKÉRÉS INDUL ===');
+            setStatus('⏳ Modellek lekérése...', '');
+            btnFetch.disabled = true;
+            btnTestAll.disabled = true;
+            
+            try {
+                checkKey();
+                const orModels = await fetchOpenRouterModels();
+                allModels = orModels;
+                testResults = {};
+                renderCards();
+                setStatus(`✅ Sikeres: ${allModels.length} ingyenes modell.`, 'success');
+                debugLog(`✅ Kész: ${allModels.length} modell betöltve`, 'success');
+                btnTestAll.disabled = false;
+            } catch (err) {
+                setStatus(`❌ Hiba: ${err.message}`, 'error');
+                debugLog(`❌ Hiba: ${err.message}`, 'error');
+            } finally {
+                btnFetch.disabled = false;
+            }
         }
 
-        // OPENROUTER API ENGINE (AKTÍV INGYENES ROUTEREKKEL)
-        async function callOpenRouterAPI(apiKey, messages) {
-            if (!apiKey || !apiKey.trim()) throw new Error("OPENROUTER_MISSING_KEY");
-
-            const freeModels = [
-                "openrouter/free",
-                "nvidia/nemotron-3-ultra-550b-a55b:free",
-                "google/gemma-4-31b-it:free",
-                "openai/gpt-oss-120b:free"
-            ];
-
-            let lastError = "";
-
-            for (let m of freeModels) {
-                try {
-                    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json", 
-                            "Authorization": `Bearer ${apiKey.trim()}`
-                        },
-                        body: JSON.stringify({ model: m, messages: messages })
-                    });
-                    
-                    if (res.status === 200) {
-                        const d = await res.json();
-                        if (d.choices && d.choices[0] && d.choices[0].message) {
-                            return d.choices[0].message.content;
-                        }
-                    } else {
-                        lastError = `HTTP_${res.status}`;
-                    }
-                } catch(e) {
-                    lastError = e.message;
-                }
-            }
-            throw new Error(`OPENROUTER_FAILED (${lastError || "NO_RESPONSE"})`);
-        }
-
-        // --- DIAGNOSZTIKAI TESZTELŐ ENGINE ---
-        async function runHealthCheck() {
-            toggleHealthModal(true);
-            const container = document.getElementById("health-results-container");
-            container.innerHTML = `<div class="text-cyan-400 font-mono italic animate-pulse">Tesztelés indítása az összes csatornán...</div>`;
-
-            const testMessages = [{ role: "user", content: "Reply with 'OK'" }];
-            const groqKey = localStorage.getItem("GROQ_KEY");
-            const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
-
-            let resultsHtml = "";
-
-            // 1. Groq
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>1. Groq (Llama 3.3):</strong> `;
-            if (!groqKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callGroqAPI(groqKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-                }
-            }
-
-            // 2. Puter AI
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Puter AI (Free Keyless):</strong> `;
-            try {
-                await callPuterAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-            }
-
-            // 3. AI Horde
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. AI Horde (Free Keyless Anonymous):</strong> `;
-            try {
-                await callAIHordeAPI(testMessages);
-                resultsHtml += `<span class="text-emerald-400">✓ Működik (100% Ingyenes, Kulcsmentes)</span></div>`;
-            } catch(e) {
-                resultsHtml += `<span class="text-amber-400">⚠ Inaktív/Lassú: ${e.message}</span></div>`;
-            }
-
-            // 4. Gemini
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Gemini (Flash):</strong> `;
-            if (!geminiKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callGeminiAPI(geminiKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-amber-400">⚠ Értesítés: ${e.message}</span></div>`;
-                }
-            }
-
-            // 5. OpenRouter
-            resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>5. OpenRouter (Free Chain):</strong> `;
-            if (!openrouterKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
-            } else {
-                try {
-                    await callOpenRouterAPI(openrouterKey, testMessages);
-                    resultsHtml += `<span class="text-emerald-400">✓ Működik (HTTP 200 OK)</span></div>`;
-                } catch(e) {
-                    resultsHtml += `<span class="text-red-400">✗ Hiba: ${e.message}</span></div>`;
-                }
-            }
-
-            container.innerHTML = resultsHtml;
-        }
-
-        // --- BŐVÍTETT SMART FAILOVER ENGINE ---
-        async function executeSmartFailoverPipeline(currentEnPrompt) {
-            const groqKey = localStorage.getItem("GROQ_KEY");
-            const geminiKey = localStorage.getItem("GEMINI_KEY");
-            const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
-            const messages = [{ role: "user", content: currentEnPrompt }];
-
-            // TIER 1: Groq API
-            if (groqKey) {
-                try {
-                    const responseEn = await callGroqAPI(groqKey, messages);
-                    return { responseEn, modelUsed: "Groq (Llama 3.3)" };
-                } catch (err) {}
-            }
-
-            // TIER 2: Puter AI (Kulcsmentes)
-            try {
-                const responseEn = await callPuterAPI(messages);
-                return { responseEn, modelUsed: "Puter AI (Free Keyless)" };
-            } catch (err) {}
-
-            // TIER 3: AI Horde (Anonim Kulcsmentes)
-            try {
-                const responseEn = await callAIHordeAPI(messages);
-                return { responseEn, modelUsed: "AI Horde (Free Keyless)" };
-            } catch (err) {}
-
-            // TIER 4: Gemini API
-            if (geminiKey) {
-                try {
-                    const responseEn = await callGeminiAPI(geminiKey, messages);
-                    return { responseEn, modelUsed: "Gemini Flash" };
-                } catch (err) {}
-            }
-
-            // TIER 5: OpenRouter Free
-            if (openrouterKey) {
-                try {
-                    const responseEn = await callOpenRouterAPI(openrouterKey, messages);
-                    return { responseEn, modelUsed: "OpenRouter Free" };
-                } catch (err) {}
-            }
-
-            throw new Error("Összes AI modell elérhetetlen.");
-        }
-
-        // --- KÜLDÉS ÉS VÁLASZFELDOLGOZÁS ---
-        async function handleSend() {
-            const input = document.getElementById("user-input");
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (!currentTopic) {
-                await createNewTopicPrompt();
-                if (!currentTopic) return;
-            }
-
-            input.value = "";
-            appendMessage("Felhasználó", text);
+        // --- Egy modell tesztelése ---
+        async function testSingleModel(model) {
+            const id = model.id;
+            testResults[id] = { status: 'pending', message: '' };
+            renderCards();
 
             try {
-                const enPrompt = await translateText(text, "hu", "en");
-                const { responseEn, modelUsed } = await executeSmartFailoverPipeline(enPrompt);
-                const aiResponseHu = await translateText(responseEn, "en", "hu");
+                debugLog(`🧪 Tesztelés: ${id}`);
+                
+                const url = 'https://openrouter.ai/api/v1/chat/completions';
+                const payload = {
+                    model: id,
+                    messages: [
+                        { role: 'user', content: 'Mondj egy rövid, 5 szavas köszöntést magyarul!' }
+                    ],
+                    max_tokens: 30,
+                    temperature: 0.7
+                };
 
-                appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
+                debugLog(`🌐 POST ${url}`);
+                debugLog(`📦 Payload: ${JSON.stringify(payload).substring(0, 200)}...`);
 
-                if (!currentTopic.turns) currentTopic.turns = [];
-                currentTopic.turns.push({
-                    timestamp: new Date().toLocaleString(),
-                    userText: text,
-                    aiResponse: aiResponseHu,
-                    modelUsed: modelUsed
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
 
-                saveTopicToDB(currentTopic);
+                debugLog(`📊 Válasz státusz: ${resp.status} ${resp.statusText}`);
 
-            } catch (e) {
-                appendMessage("Rendszer Hiba", e.message, true);
+                // Ha nem OK, próbáljuk meg kinyerni a részletes hibát
+                if (!resp.ok) {
+                    let errText = await resp.text();
+                    debugLog(`❌ Hibaválasz: ${errText}`, 'error');
+                    
+                    // Próbáljuk JSON-ként értelmezni
+                    try {
+                        const errJson = JSON.parse(errText);
+                        if (errJson.error) {
+                            throw new Error(`${errJson.error.message || errJson.error}`);
+                        }
+                    } catch (e) {
+                        // Ha nem JSON, akkor sima szöveg
+                    }
+                    throw new Error(`HTTP ${resp.status}: ${errText.substring(0, 200)}`);
+                }
+
+                const data = await resp.json();
+                const responseText = data.choices?.[0]?.message?.content || '(üres válasz)';
+                const short = responseText.length > 200 ? responseText.substring(0, 200) + '…' : responseText;
+                
+                debugLog(`✅ Sikeres válasz: ${short}`, 'success');
+                testResults[id] = { status: 'success', message: short };
+                
+            } catch (err) {
+                debugLog(`❌ Hiba: ${err.message}`, 'error');
+                testResults[id] = { status: 'error', message: err.message || 'Ismeretlen hiba' };
             }
+            renderCards();
         }
 
-        function appendMessage(sender, text, isError = false) {
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML += `<div class="p-4 ${isError ? 'bg-red-950/60 border border-red-800/60' : 'bg-slate-900 border border-slate-800'} rounded-2xl max-w-[85%] mb-3">
-                <div class="text-[11px] font-mono text-slate-400 mb-1">${sender}</div>
-                <div class="text-sm whitespace-pre-wrap">${text}</div>
-            </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+        // --- Összes modell tesztelése ---
+        async function testAllModels() {
+            if (!allModels.length) {
+                setStatus('⚠️ Előbb töltsd le a modelleket!', 'error');
+                debugLog('⚠️ Nincsenek modellek betöltve', 'error');
+                return;
+            }
+            
+            debugLog('=== TESZTELÉS INDUL ===');
+            btnTestAll.disabled = true;
+            btnFetch.disabled = true;
+            setStatus(`⏳ ${allModels.length} modell tesztelése...`, '');
+
+            for (const m of allModels) {
+                if (!testResults[m.id]) {
+                    testResults[m.id] = { status: 'pending', message: '' };
+                }
+            }
+            renderCards();
+
+            for (let i = 0; i < allModels.length; i++) {
+                await testSingleModel(allModels[i]);
+                if (i < allModels.length - 1) {
+                    await new Promise(r => setTimeout(r, 800));
+                }
+            }
+
+            const successCount = Object.values(testResults).filter(r => r.status === 'success').length;
+            const errorCount = Object.values(testResults).filter(r => r.status === 'error').length;
+            setStatus(`✅ Kész: ${successCount} sikeres, ${errorCount} hibás.`, 'success');
+            debugLog(`✅ Teszt kész: ${successCount}/${allModels.length} sikeres`, 'success');
+            btnTestAll.disabled = false;
+            btnFetch.disabled = false;
         }
 
-        function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
-        function toggleHealthModal(show = true) { 
-            const modal = document.getElementById("health-modal");
-            if (show) modal.classList.remove("hidden");
-            else modal.classList.add("hidden");
+        // --- Törlés ---
+        function clearResults() {
+            allModels = [];
+            testResults = {};
+            container.innerHTML = '';
+            setStatus('🗑️ Törölve.', '');
+            btnTestAll.disabled = true;
+            debugLog('🗑️ Eredmények törölve');
         }
 
-        function saveKeys() {
-            localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
-            localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
-            localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
-            alert("Beállítások elmentve!");
-            toggleSettings();
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            initDB();
-            document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
-            document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
-            document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
+        // --- Eseménykezelők ---
+        btnFetch.addEventListener('click', fetchAllModels);
+        btnTestAll.addEventListener('click', testAllModels);
+        btnClear.addEventListener('click', clearResults);
+        btnDebugKey.addEventListener('click', () => {
+            checkKey();
+            setStatus('🔍 Kulcs ellenőrizve – nézd a debug ablakot!', '');
         });
+
+        // --- Alap állapot ---
+        debugLog('📋 Oldal betöltve. Állítsd be a kulcsot a kódban!');
+        renderCards();
+        setStatus('Kattints a „Modelllekérés” gombra.', '');
     </script>
 </body>
 </html>
