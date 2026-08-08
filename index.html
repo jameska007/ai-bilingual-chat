@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Diagnostic v7.0</title>
+    <title>NEXUS // Endpoint-Fix v7.2</title>
     
     <meta name="color-scheme" content="dark">
     
@@ -48,6 +48,14 @@
             -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
             transition: background-color 5000s ease-in-out 0s !important;
         }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased">
@@ -59,14 +67,13 @@
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.0 Diagnostic</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v7.2 Endpoint-Fix</h1>
                 <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
         <div class="flex gap-2 flex-wrap items-center">
             <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
 
-            <!-- HIBAKERESŐ TESZT GOMB -->
             <button onclick="runHealthCheck()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1">
                 <i data-lucide="activity" class="w-3.5 h-3.5"></i>
                 <span>🧪 Csatornák Tesztelése</span>
@@ -101,7 +108,7 @@
         <div id="load-progress" class="text-[11px] text-cyan-400 font-mono italic">Kész az inicializálásra.</div>
     </div>
 
-    <!-- HIBAKERESŐ ÉS TEST RESULTS MODAL -->
+    <!-- HIBAKERESŐ MODAL -->
     <div id="health-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md p-4 z-50 overflow-y-auto flex items-center justify-center">
         <div class="bg-cyber-900 border border-slate-800 w-full max-w-3xl rounded-2xl p-5 shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -130,19 +137,70 @@
     <!-- Chat Area -->
     <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
         <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
-            NEXUS v7.0 Diagnostic Engine: Kattints a **"🧪 Csatornák Tesztelése"** gombra az API kapcsolatok azonnali ellenőrzéséhez!
+            NEXUS v7.2 Engine: Pollinations végponti URL javítva. Kattints a **"🧪 Csatornák Tesztelése"** gombra az ellenőrzéshez!
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="p-4 bg-cyber-900/90 border-t border-slate-800">
         <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500"></textarea>
-        <button onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all">Küldés</button>
+        
+        <button id="send-btn" onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all flex items-center justify-center gap-2">
+            <span id="send-btn-icon"><i data-lucide="send" class="w-4 h-4 inline"></i></span>
+            <span id="send-btn-text">Küldés</span>
+        </button>
     </footer>
 
     <script>
         lucide.createIcons();
         let currentTopic = null, db = null, translatorHuEn = null, translatorEnHu = null;
+
+        function updateProgressState(stepText, isProcessing = true) {
+            const btn = document.getElementById("send-btn");
+            const btnText = document.getElementById("send-btn-text");
+            const btnIcon = document.getElementById("send-btn-icon");
+
+            if (isProcessing) {
+                btn.disabled = true;
+                btn.classList.remove("bg-emerald-600", "hover:bg-emerald-500");
+                btn.classList.add("bg-amber-600", "opacity-80", "cursor-not-allowed");
+                btnText.innerText = stepText;
+                btnIcon.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>`;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove("bg-amber-600", "opacity-80", "cursor-not-allowed");
+                btn.classList.add("bg-emerald-600", "hover:bg-emerald-500");
+                btnText.innerText = "Küldés";
+                btnIcon.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline"></i>`;
+                lucide.createIcons();
+            }
+        }
+
+        function showLoadingCard() {
+            const chatBox = document.getElementById("chat-box");
+            const loadingDiv = document.createElement("div");
+            loadingDiv.id = "nexus-loading-card";
+            loadingDiv.className = "p-4 bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-[85%] mr-auto text-left mb-3 animate-pulse-fast";
+            loadingDiv.innerHTML = `
+                <div class="text-[11px] font-mono text-emerald-400 mb-1 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>NEXUS AI feldolgozás...</span>
+                </div>
+                <div class="text-xs font-mono text-slate-300 italic" id="loading-card-status">Gondolkodik a válaszon...</div>
+            `;
+            chatBox.appendChild(loadingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateLoadingCardStatus(text) {
+            const el = document.getElementById("loading-card-status");
+            if (el) el.innerText = text;
+        }
+
+        function removeLoadingCard() {
+            const el = document.getElementById("nexus-loading-card");
+            if (el) el.remove();
+        }
 
         function initDB() {
             const request = indexedDB.open("NEXUS_Workstation_DB", 1);
@@ -329,7 +387,6 @@
             return messages;
         }
 
-        // --- API CALL ENGINE ---
         async function callGroqAPI(apiKey, messages) {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -376,33 +433,38 @@
             return d.choices[0].message.content;
         }
 
-        // JAVÍTOTT POLLINATIONS OPENAI-COMPATIBLE CSATORNA
+        // JAVÍTOTT, CORSSAFE POLLINATIONS CSATORNA (OPENAI COMPATIBLE ENDPOINT)
         async function callPollinationsAPI(messages) {
-            const res = await fetch("https://text.pollinations.ai/openai", {
+            try {
+                const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        messages: messages,
+                        model: "mistral"
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        return data.choices[0].message.content;
+                    }
+                }
+            } catch (e) {}
+
+            // Fallback POST to Root
+            const resRoot = await fetch("https://text.pollinations.ai/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    messages: messages,
-                    model: "mistral"
+                    messages: messages
                 })
             });
-            
-            if (!res.ok) {
-                // Secondary Fallback GET
-                let promptStr = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
-                const resGet = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptStr.substring(0, 1500))}?model=mistral`);
-                if (!resGet.ok) throw new Error(`POLLINATIONS_HTTP_${resGet.status}`);
-                return await resGet.text();
-            }
-
-            const data = await res.json();
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content;
-            }
-            return await res.text();
+            if (!resRoot.ok) throw new Error(`POLLINATIONS_HTTP_${resRoot.status}`);
+            return await resRoot.text();
         }
 
-        // --- DIAGNOSZTIKAI ÉS HIBAKERESŐ ELEMZŐ MODUL ---
         async function runHealthCheck() {
             toggleHealthModal(true);
             const container = document.getElementById("health-results-container");
@@ -415,10 +477,9 @@
 
             let resultsHtml = "";
 
-            // 1. Groq Teszt
             resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>1. Groq (Llama 3.3):</strong> `;
             if (!groqKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs.</span></div>`;
             } else {
                 try {
                     await callGroqAPI(groqKey, testMessages);
@@ -428,10 +489,9 @@
                 }
             }
 
-            // 2. Gemini Teszt
             resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>2. Gemini (1.5 Flash):</strong> `;
             if (!geminiKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs.</span></div>`;
             } else {
                 try {
                     await callGeminiAPI(geminiKey, testMessages);
@@ -441,10 +501,9 @@
                 }
             }
 
-            // 3. OpenRouter Teszt
             resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>3. OpenRouter (Free):</strong> `;
             if (!openrouterKey) {
-                resultsHtml += `<span class="text-amber-400">Nincs API kulcs megadva.</span></div>`;
+                resultsHtml += `<span class="text-amber-400">Nincs API kulcs.</span></div>`;
             } else {
                 try {
                     await callOpenRouterAPI(openrouterKey, testMessages);
@@ -454,7 +513,6 @@
                 }
             }
 
-            // 4. Pollinations Teszt
             resultsHtml += `<div class="p-2 bg-slate-900 border border-slate-800 rounded"><strong>4. Pollinations (Free Fallback):</strong> `;
             try {
                 await callPollinationsAPI(testMessages);
@@ -472,24 +530,22 @@
             const geminiKey = localStorage.getItem("GEMINI_KEY");
             const openrouterKey = localStorage.getItem("OPENROUTER_KEY");
 
-            // 1. TIER: GROQ
             if (groqKey) {
                 try {
                     addLog("INFO", "Próbálkozás: Groq (Llama 3.3)...");
+                    updateLoadingCardStatus("Groq (Llama 3.3) válaszára várunk...");
                     const messages = buildMessageArray(turns, currentEnPrompt, false);
                     const responseEn = await callGroqAPI(groqKey, messages);
                     return { responseEn, modelUsed: "Groq (Llama 3.3)" };
                 } catch (err) {
-                    addLog("WARN", `Groq hibaok: (${err.message}). Tömörítés & Failover...`);
+                    addLog("WARN", `Groq hibaok: (${err.message}). Váltás Failover-re...`);
                 }
-            } else {
-                addLog("INFO", "Groq kulcs hiányzik, ugrottunk a 2. Tierre.");
             }
 
-            // 2. TIER: GEMINI 1.5 FLASH
             if (geminiKey) {
                 try {
-                    addLog("INFO", "Failover 1: Gemini 1.5 Flash (Tömörített)...");
+                    addLog("INFO", "Failover 1: Gemini 1.5 Flash...");
+                    updateLoadingCardStatus("Failover: Gemini 1.5 Flash csatorna indítása...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callGeminiAPI(geminiKey, messages);
                     return { responseEn, modelUsed: "Gemini 1.5 Flash (Failover)" };
@@ -498,10 +554,10 @@
                 }
             }
 
-            // 3. TIER: OPENROUTER FREE
             if (openrouterKey) {
                 try {
-                    addLog("INFO", "Failover 2: OpenRouter Free (Tömörített)...");
+                    addLog("INFO", "Failover 2: OpenRouter Free...");
+                    updateLoadingCardStatus("Failover: OpenRouter csatorna indítása...");
                     const messages = buildMessageArray(turns, currentEnPrompt, true);
                     const responseEn = await callOpenRouterAPI(openrouterKey, messages);
                     return { responseEn, modelUsed: "OpenRouter Free (Failover)" };
@@ -510,11 +566,11 @@
                 }
             }
 
-            // 4. TIER: POLLINATIONS FREE
-            addLog("INFO", "Failover 3: Pollinations Free Mistral (Tömörített)...");
+            addLog("INFO", "Failover 3: Pollinations Free...");
+            updateLoadingCardStatus("Failover: Pollinations Free csatorna indítása...");
             const messages = buildMessageArray(turns, currentEnPrompt, true);
             const responseEn = await callPollinationsAPI(messages);
-            return { responseEn, modelUsed: "Pollinations Mistral (Free Failover)" };
+            return { responseEn, modelUsed: "Pollinations Free (Failover)" };
         }
 
         async function handleSend() {
@@ -529,15 +585,23 @@
 
             input.value = "";
             const msgId = "user_msg_" + Date.now();
+            
+            updateProgressState("⏳ 1/3: Fordítás...", true);
             appendMessage("Felhasználó", text, null, msgId);
+            showLoadingCard();
 
             try {
                 const enPrompt = await translateText(text, "hu", "en");
                 updateMessageEnPrompt(msgId, enPrompt);
 
+                updateProgressState("🧠 2/3: AI válasz...", true);
                 const { responseEn: aiResponseEn, modelUsed } = await executeSmartFailoverPipeline(currentTopic.turns, enPrompt);
 
+                updateProgressState("🌐 3/3: Magyarítás...", true);
+                updateLoadingCardStatus("Válasz magyarítása...");
                 const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
+
+                removeLoadingCard();
                 appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
 
                 if (!currentTopic.turns) currentTopic.turns = [];
@@ -554,8 +618,11 @@
                 await refreshRecentTopicsList();
 
             } catch (e) {
+                removeLoadingCard();
                 addLog("ERROR", "Összes AI modell válaszképtelen", e.message);
                 appendMessage("Rendszer Hiba", "Minden AI csatorna elérhetetlen: " + e.message, null, null, true);
+            } finally {
+                updateProgressState("Küldés", false);
             }
         }
 
