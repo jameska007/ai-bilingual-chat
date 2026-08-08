@@ -3,37 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS // Memory-Lock v5.2</title>
+    <title>NEXUS // Full-Restore v5.3</title>
+    
+    <meta name="color-scheme" content="dark">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"></script>
+    
     <style>
-        html, body { background-color: #090d16 !important; color: #f1f5f9 !important; height: 100%; }
-        .bg-grid { background-size: 30px 30px; background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); }
+        :root { color-scheme: dark !important; }
+        html, body { 
+            background-color: #090d16 !important; 
+            color: #f1f5f9 !important; 
+            height: 100%; 
+        }
+        .hidden { display: none !important; }
+        .bg-grid { 
+            background-size: 30px 30px; 
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px); 
+        }
         
-        /* HARD STYLE OVERRIDE */
-        input, textarea, select {
+        /* Android Chrome Beviteli Mező Fix */
+        textarea, input, select {
             background-color: #0f172a !important;
             color: #ffffff !important;
             border: 1px solid #334155 !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            caret-color: #10b981 !important;
+            color-scheme: dark !important;
+        }
+        
+        textarea::placeholder, input::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        input:-webkit-autofill,
+        textarea:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        textarea:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        textarea:-webkit-autofill:focus {
+            -webkit-text-fill-color: #ffffff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+            transition: background-color 5000s ease-in-out 0s !important;
         }
     </style>
 </head>
 <body class="bg-cyber-950 text-slate-100 h-screen flex flex-col font-sans bg-grid antialiased">
 
     <!-- Fejléc -->
-    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center gap-2">
+    <header class="bg-cyber-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex justify-between items-center gap-2 flex-wrap">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <i data-lucide="cpu" class="w-5 h-5 text-emerald-400"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v5.2 Memory-Lock</h1>
+                <h1 class="text-sm font-bold font-mono uppercase text-slate-100">NEXUS v5.3 Full-Restore</h1>
+                <p class="text-[10px] text-slate-400 font-mono" id="current-topic-display">Téma: Nincs kiválasztva</p>
             </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="createNewTopicPrompt()" class="bg-emerald-600 px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
-            <button onclick="toggleSettings()" class="bg-slate-800 px-3 py-1.5 rounded text-xs font-mono">Beállítások</button>
+        <div class="flex gap-2 flex-wrap items-center">
+            <button onclick="createNewTopicPrompt()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-mono font-semibold">Új téma</button>
+            
+            <!-- ELŐZMÉNYEK / RECENT LISTA -->
+            <select id="recent-topics-select" onchange="switchTopic(this.value)" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-700 text-xs rounded px-2 py-1.5 font-mono max-w-[150px] truncate">
+                <option value="">📁 Recent témák...</option>
+            </select>
+
+            <button onclick="exportCurrentToObsidian()" class="bg-purple-800 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-mono">Mentés Obsidianba</button>
+            <button onclick="toggleSettings()" class="bg-slate-800 text-slate-200 px-3 py-1.5 rounded text-xs font-mono">Beállítások</button>
             <button onclick="toggleDebugModal()" class="bg-amber-950 text-amber-300 px-3 py-1.5 rounded text-xs font-mono">Napló</button>
         </div>
     </header>
@@ -41,131 +81,359 @@
     <!-- Beállítások Panel -->
     <div id="settings-panel" class="hidden bg-cyber-900 p-4 space-y-3 border-b border-slate-800">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="p-2 text-xs">
-            <input type="password" id="groq-key" placeholder="Groq API Key" class="p-2 text-xs">
-            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" class="p-2 text-xs">
+            <input type="password" id="gemini-key" placeholder="Gemini API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="groq-key" placeholder="Groq API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
+            <input type="password" id="openrouter-key" placeholder="OpenRouter API Key" style="background-color: #0f172a !important; color: #ffffff !important;" class="border border-slate-800 rounded p-2 text-xs">
         </div>
-        <button onclick="saveKeys()" class="bg-emerald-700 text-white text-xs p-2 rounded font-mono w-full">API Kulcsok Mentése</button>
+        <div class="flex flex-wrap gap-2 pt-2">
+            <button onclick="initLocalTranslators()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs p-2 rounded font-mono">
+                📁 Helyi Fordító Letöltése (ONNX WASM)
+            </button>
+            <button onclick="saveKeys()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs p-2 rounded font-mono">Mentés</button>
+        </div>
+        <div id="load-progress" class="text-[11px] text-cyan-400 font-mono italic">Kész az inicializálásra.</div>
     </div>
 
     <!-- Hibanapló Modal -->
     <div id="debug-modal" class="hidden fixed inset-0 bg-black/90 p-4 z-50 overflow-y-auto">
-        <button onclick="toggleDebugModal()" class="text-white text-xs bg-slate-800 px-3 py-1 rounded mb-4">Bezárás</button>
-        <div id="debug-log-container" class="font-mono text-[11px] text-slate-300"></div>
+        <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+            <span class="text-xs font-mono text-amber-400">DIAGNOSTICS & SYSTEM LOGS</span>
+            <button onclick="toggleDebugModal()" class="text-white text-xs bg-slate-800 px-3 py-1 rounded">Bezárás</button>
+        </div>
+        <div id="debug-log-container" class="font-mono text-[11px] text-slate-300 space-y-1"></div>
     </div>
 
     <!-- Chat Area -->
-    <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4"></main>
+    <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono text-slate-300">
+            Válassz egy korábbi beszélgetést a **Recent témák** listából, vagy hozz létre egyet az **Új téma** gombbal!
+        </div>
+    </main>
 
     <!-- Footer -->
     <footer class="p-4 bg-cyber-900/90 border-t border-slate-800">
-        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." class="w-full rounded-lg p-3 text-sm focus:outline-none"></textarea>
-        <button onclick="handleSend()" class="w-full bg-emerald-600 mt-2 p-2.5 rounded-lg font-bold text-sm text-white">Küldés</button>
+        <textarea id="user-input" rows="2" placeholder="Írd ide a kérdésed magyarul..." style="background-color: #0f172a !important; color: #ffffff !important;" class="w-full border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-emerald-500"></textarea>
+        <button onclick="handleSend()" class="w-full bg-emerald-600 hover:bg-emerald-500 mt-2 p-2.5 rounded-lg font-bold text-sm text-white transition-all">Küldés</button>
     </footer>
 
     <script>
         lucide.createIcons();
-        let currentTopic = null, db = null;
+        let currentTopic = null, db = null, translatorHuEn = null, translatorEnHu = null;
 
+        // --- INDEXEDDB INICIALIZÁLÁS ÉS HELYREÁLLÍTÁS ---
         function initDB() {
             const request = indexedDB.open("NEXUS_Workstation_DB", 1);
-            request.onupgradeneeded = (e) => e.target.result.createObjectStore("topics", { keyPath: "id" });
-            request.onsuccess = (e) => { db = e.target.result; };
+            request.onupgradeneeded = (e) => {
+                const dbInstance = e.target.result;
+                if (!dbInstance.objectStoreNames.contains("topics")) {
+                    dbInstance.createObjectStore("topics", { keyPath: "id" });
+                }
+            };
+            request.onsuccess = (e) => {
+                db = e.target.result;
+                addLog("SUCCESS", "IndexedDB adatbázis csatlakoztatva.");
+                refreshRecentTopicsList();
+            };
+            request.onerror = (e) => {
+                addLog("ERROR", "IndexedDB hibaok", e);
+            };
         }
 
+        async function refreshRecentTopicsList() {
+            if (!db) return;
+            const tx = db.transaction("topics", "readonly");
+            const req = tx.objectStore("topics").getAll();
+            req.onsuccess = () => {
+                const select = document.getElementById("recent-topics-select");
+                select.innerHTML = '<option value="">📁 Recent témák...</option>';
+                const topics = req.result || [];
+                
+                // Legfrissebb témák előre
+                topics.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                
+                topics.forEach(t => {
+                    const opt = document.createElement("option");
+                    opt.value = t.id;
+                    opt.innerText = t.title || "Névtelen téma";
+                    select.appendChild(opt);
+                });
+                
+                if (topics.length > 0) {
+                    addLog("INFO", `${topics.length} korábbi téma betöltve az előzményekből.`);
+                }
+            };
+        }
+
+        async function switchTopic(id) {
+            if (!id || !db) return;
+            const tx = db.transaction("topics", "readonly");
+            const req = tx.objectStore("topics").get(id);
+            req.onsuccess = () => {
+                currentTopic = req.result;
+                if (!currentTopic) return;
+
+                document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
+                document.getElementById("recent-topics-select").value = id;
+                
+                const chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML = "";
+
+                if (currentTopic.turns && currentTopic.turns.length > 0) {
+                    currentTopic.turns.forEach(t => {
+                        appendMessage("Felhasználó", t.userText, t.userPromptEn);
+                        appendMessage("NEXUS AI (" + (t.modelUsed || "AI") + ")", t.aiResponse);
+                    });
+                } else {
+                    chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">TÉMA BETÖLTVE: "${currentTopic.title}" (Üres)</div>`;
+                }
+
+                addLog("SUCCESS", `Téma váltva: "${currentTopic.title}" (${currentTopic.turns ? currentTopic.turns.length : 0} kör)`);
+            };
+        }
+
+        async function createNewTopicPrompt() {
+            const title = prompt("Adj meg egy nevet az új témának:");
+            if (!title || !title.trim()) return;
+
+            currentTopic = { 
+                id: "topic_" + Date.now(), 
+                title: title.trim(), 
+                createdAt: new Date().toISOString(), 
+                turns: [] 
+            };
+
+            saveTopicToDB(currentTopic);
+            document.getElementById("current-topic-display").innerText = "Téma: " + currentTopic.title;
+            
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = `<div class="max-w-2xl mx-auto bg-cyber-900/50 border border-slate-800/80 rounded-2xl p-4 text-center font-mono text-xs text-emerald-400">ÚJ TÉMA ELINDÍTVA: "${currentTopic.title}"</div>`;
+            
+            await refreshRecentTopicsList();
+            document.getElementById("recent-topics-select").value = currentTopic.id;
+        }
+
+        function saveTopicToDB(topic) {
+            if (!db || !topic) return;
+            const tx = db.transaction("topics", "readwrite");
+            tx.objectStore("topics").put(topic);
+        }
+
+        // --- FORDÍTÓ ENGINE (Hybrid: Local WASM + Fallback) ---
+        async function initLocalTranslators() {
+            const progress = document.getElementById("load-progress");
+            progress.innerText = "Modellek letöltése...";
+            addLog("INFO", "Helyi WASM letöltés indítása...");
+
+            try {
+                const { pipeline, env } = window.Xenova;
+                env.allowLocalModels = false;
+                env.useBrowserCache = true;
+                if (env.backends && env.backends.onnx) {
+                    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/';
+                    env.backends.onnx.wasm.numThreads = 1;
+                }
+
+                translatorHuEn = await pipeline('translation', 'Xenova/opus-mt-hu-en');
+                translatorEnHu = await pipeline('translation', 'Xenova/opus-mt-en-hu');
+
+                progress.innerText = "✓ Helyi ONNX fordító aktív!";
+                addLog("SUCCESS", "Helyi WASM fordító betöltve.");
+            } catch (err) {
+                progress.innerText = "⚠ Helyi modell inaktív. Az AI-alapú hibrid fordító aktív!";
+                addLog("WARN", "Helyi WASM hiba, AI fordító használata.", err.message);
+            }
+        }
+
+        async function translateText(text, fromLang, toLang) {
+            try {
+                if (fromLang === "hu" && toLang === "en" && translatorHuEn) {
+                    const res = await translatorHuEn(text);
+                    if (res && res[0] && res[0].translation_text) return res[0].translation_text;
+                }
+                if (fromLang === "en" && toLang === "hu" && translatorEnHu) {
+                    const res = await translatorEnHu(text);
+                    if (res && res[0] && res[0].translation_text) return res[0].translation_text;
+                }
+            } catch (e) {}
+
+            const targetLang = toLang === "en" ? "English" : "Hungarian";
+            const prompt = `Translate the following text into ${targetLang}. Output ONLY the translation without any introduction or quotes:\n\n${text}`;
+
+            const groqKey = localStorage.getItem("GROQ_KEY");
+            if (groqKey) {
+                try {
+                    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+                        body: JSON.stringify({
+                            model: "llama-3.3-70b-versatile",
+                            messages: [{ role: "user", content: prompt }],
+                            temperature: 0.1
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const translated = data.choices[0].message.content.trim();
+                        if (translated) return translated;
+                    }
+                } catch (e) {}
+            }
+
+            try {
+                const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+                if (res.ok) {
+                    const translated = (await res.text()).trim();
+                    if (translated) return translated;
+                }
+            } catch (e) {}
+
+            return text;
+        }
+
+        // --- CSHAT ÉS MEMÓRIA MŰKÖDÉS ---
         async function handleSend() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
             if (!text) return;
-            if (!currentTopic) await createNewTopicPrompt();
-            
+
+            if (!currentTopic) {
+                await createNewTopicPrompt();
+                if (!currentTopic) return;
+            }
+
             input.value = "";
-            const msgId = "msg_" + Date.now();
+            const msgId = "user_msg_" + Date.now();
             appendMessage("Felhasználó", text, null, msgId);
 
-            // 1. Kontextus betöltése adatbázisból (GARANTÁLT Memory-Lock)
-            const tx = db.transaction("topics", "readwrite");
-            const store = tx.objectStore("topics");
-            const req = store.get(currentTopic.id);
-            
-            req.onsuccess = async () => {
-                const topicData = req.result;
-                let apiMessages = [{ role: "system", content: "You are a helpful AI assistant." }];
-
-                // Előzmények betöltése
-                if (topicData.turns) {
-                    topicData.turns.forEach(t => {
-                        apiMessages.push({ role: "user", content: t.userPromptEn });
-                        apiMessages.push({ role: "assistant", content: t.aiResponseEn });
-                    });
-                }
-                
-                addLog("INFO", `[MEMORY INFO] Context turns sent: ${topicData.turns.length}`);
-
-                // Fordítás és hívás
+            try {
                 const enPrompt = await translateText(text, "hu", "en");
                 updateMessageEnPrompt(msgId, enPrompt);
+
+                // Teljes rövid távú memóriatömb összeállítása
+                let apiMessages = [
+                    { role: "system", content: "You are NEXUS AI, an expert software developer and analytical assistant. Maintain context across the conversation history." }
+                ];
+
+                if (currentTopic.turns && currentTopic.turns.length > 0) {
+                    currentTopic.turns.forEach(turn => {
+                        apiMessages.push({ role: "user", content: turn.userPromptEn || turn.userText });
+                        apiMessages.push({ role: "assistant", content: turn.aiResponseEn || turn.aiResponse });
+                    });
+                }
+
                 apiMessages.push({ role: "user", content: enPrompt });
 
-                try {
-                    const groqKey = localStorage.getItem("GROQ_KEY");
+                addLog("INFO", `[MEMORY CHECK] Context turns sent to AI: ${currentTopic.turns ? currentTopic.turns.length : 0}`);
+
+                const groqKey = localStorage.getItem("GROQ_KEY");
+                let aiResponseEn = "";
+                let modelUsed = "";
+
+                if (groqKey) {
                     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: apiMessages })
+                        body: JSON.stringify({
+                            model: "llama-3.3-70b-versatile",
+                            messages: apiMessages,
+                            temperature: 0.5
+                        })
                     });
+                    if (!res.ok) throw new Error(`Groq API hiba (${res.status})`);
                     const d = await res.json();
-                    const aiEn = d.choices[0].message.content;
-                    const aiHu = await translateText(aiEn, "en", "hu");
-                    
-                    appendMessage("NEXUS AI", aiHu);
-                    
-                    topicData.turns.push({ userText: text, userPromptEn: enPrompt, aiResponse: aiHu, aiResponseEn: aiEn, modelUsed: "Groq" });
-                    store.put(topicData);
-                    currentTopic = topicData;
-                } catch(e) { addLog("ERROR", "API Hiba", e.message); }
-            };
+                    aiResponseEn = d.choices[0].message.content;
+                    modelUsed = "Groq (Llama 3.3)";
+                } else {
+                    let fullPromptText = apiMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+                    const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPromptText)}`);
+                    if (!res.ok) throw new Error(`Pollinations hiba (${res.status})`);
+                    aiResponseEn = await res.text();
+                    modelUsed = "Pollinations (Keyless)";
+                }
+
+                const aiResponseHu = await translateText(aiResponseEn, "en", "hu");
+                appendMessage("NEXUS AI (" + modelUsed + ")", aiResponseHu);
+
+                if (!currentTopic.turns) currentTopic.turns = [];
+                currentTopic.turns.push({
+                    timestamp: new Date().toLocaleString(),
+                    userText: text,
+                    userPromptEn: enPrompt,
+                    aiResponse: aiResponseHu,
+                    aiResponseEn: aiResponseEn,
+                    modelUsed: modelUsed
+                });
+
+                saveTopicToDB(currentTopic);
+                await refreshRecentTopicsList();
+
+            } catch (e) {
+                addLog("ERROR", "API Hiba", e.message);
+                appendMessage("Rendszer Hiba", e.message, null, null, true);
+            }
         }
 
-        // Fordító + UI Segédek
-        async function translateText(text, from, to) {
-            try {
-                const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent("Translate to " + (to==="en"?"English":"Hungarian") + ": " + text)}`);
-                return await res.text();
-            } catch(e) { return text; }
-        }
-
-        function appendMessage(sender, text, enText=null, msgId=null) {
+        function appendMessage(sender, text, enText = null, msgId = null, isError = false) {
             const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML += `<div ${msgId?'id="'+msgId+'"':''} class="p-4 ${sender==='Felhasználó'?'bg-emerald-950':'bg-slate-900'} rounded-lg mb-3">
-                <div class="text-[10px] text-slate-400">${sender}</div>
-                <div class="text-sm">${text}</div>
-                ${enText?`<div class="mt-2 text-[10px] text-cyan-300 border-t border-cyan-800 pt-1 en-prompt-box">🇬🇧 EN: ${enText}</div>`:''}
+            const isUser = sender === 'Felhasználó';
+            const idAttr = msgId ? `id="${msgId}"` : '';
+
+            chatBox.innerHTML += `<div ${idAttr} class="p-4 ${isUser ? 'bg-emerald-950/70 border border-emerald-800/40' : isError ? 'bg-red-950/60 border border-red-800/60' : 'bg-slate-900 border border-slate-800'} rounded-2xl max-w-[85%] ${isUser ? 'ml-auto text-right' : 'mr-auto text-left'} mb-3">
+                <div class="text-[11px] font-mono text-slate-400 mb-1">${sender}</div>
+                <div class="text-sm whitespace-pre-wrap">${text}</div>
+                ${isUser ? `<div class="en-prompt-box ${enText ? '' : 'hidden'} text-xs font-mono text-cyan-300 mt-2 border-t border-emerald-800/50 pt-1.5 text-left bg-black/40 p-2 rounded border border-cyan-900/40">🇬🇧 EN Prompt: <span>${enText || ''}</span></div>` : ''}
             </div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function updateMessageEnPrompt(msgId, enText) {
-            const el = document.getElementById(msgId);
-            if(el) el.querySelector(".en-prompt-box span") ? el.querySelector(".en-prompt-box span").innerText = enText : null;
+            const msgEl = document.getElementById(msgId);
+            if (!msgEl) return;
+            const box = msgEl.querySelector(".en-prompt-box");
+            if (box) {
+                box.querySelector("span").innerText = enText;
+                box.classList.remove("hidden");
+            }
         }
 
-        function addLog(l, m) { document.getElementById("debug-log-container").innerHTML += `<div>[${l}] ${m}</div>`; }
         function toggleSettings() { document.getElementById("settings-panel").classList.toggle("hidden"); }
         function toggleDebugModal() { document.getElementById("debug-modal").classList.toggle("hidden"); }
-        async function createNewTopicPrompt() {
-            const title = prompt("Téma neve:");
-            currentTopic = { id: "topic_" + Date.now(), title: title, turns: [] };
-            const tx = db.transaction("topics", "readwrite");
-            tx.objectStore("topics").put(currentTopic);
-            document.getElementById("current-topic-display").innerText = "Téma: " + title;
-        }
-        function saveKeys() { 
-            localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim()); 
-            alert("Mentve!"); 
+        
+        function addLog(l, m, details = "") { 
+            const container = document.getElementById("debug-log-container");
+            if (container) {
+                container.innerHTML += `<div><span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> <span class="${l === 'ERROR' ? 'text-red-400 font-bold' : l === 'WARN' ? 'text-amber-300' : 'text-emerald-400'}">[${l}] ${m} ${details}</span></div>`;
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
-        document.addEventListener("DOMContentLoaded", initDB);
+        function saveKeys() {
+            localStorage.setItem("GROQ_KEY", document.getElementById("groq-key").value.trim());
+            localStorage.setItem("GEMINI_KEY", document.getElementById("gemini-key").value.trim());
+            localStorage.setItem("OPENROUTER_KEY", document.getElementById("openrouter-key").value.trim());
+            alert("API kulcsok elmentve!");
+            toggleSettings();
+        }
+
+        function exportCurrentToObsidian() {
+            if (!currentTopic || !currentTopic.turns || currentTopic.turns.length === 0) return alert("Nincs elmenthető téma!");
+            let md = `# ${currentTopic.title}\n\n`;
+            currentTopic.turns.forEach(t => { 
+                md += `### Felhasználó\n> HU: ${t.userText}\n> EN: ${t.userPromptEn}\n\n### AI (${t.modelUsed})\n${t.aiResponse}\n\n---\n\n`; 
+            });
+            const blob = new Blob([md], { type: "text/markdown" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `${currentTopic.title.replace(/[^a-zA-Z0-9]/g, "_")}.md`;
+            a.click();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initDB();
+            document.getElementById("groq-key").value = localStorage.getItem("GROQ_KEY") || "";
+            document.getElementById("gemini-key").value = localStorage.getItem("GEMINI_KEY") || "";
+            document.getElementById("openrouter-key").value = localStorage.getItem("OPENROUTER_KEY") || "";
+        });
     </script>
 </body>
 </html>
