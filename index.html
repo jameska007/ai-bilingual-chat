@@ -349,11 +349,14 @@
         async function callOpenRouterAPI(apiKey, messages) {
             if (!apiKey || !apiKey.trim()) throw new Error("OPENROUTER_MISSING_KEY");
 
-            const freeModels = [
-                "google/gemini-2.0-flash-lite-001:free",
-                "meta-llama/llama-3.3-70b-instruct:free",
-                "deepseek/deepseek-r1:free"
-            ];
+            // Frissített OpenRouter Ingyenes Modell-Tömb
+         const freeModels = [
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "google/gemma-4-31b-it:free",
+    "openai/gpt-oss-120b:free",
+    "openrouter/free"
+];
+
 
             for (let m of freeModels) {
                 try {
